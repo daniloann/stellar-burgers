@@ -1,7 +1,7 @@
 import { ProfileUI } from '@ui-pages';
 import { FC, SyntheticEvent, useEffect, useState } from 'react';
 import { useDispatch, useSelector } from '../../services/store';
-import { updateUser, getUser } from '../../services/slices/userSlice';
+import { updateUser } from '../../services/slices/userSlice';
 
 export const Profile: FC = () => {
   const dispatch = useDispatch();
@@ -13,10 +13,7 @@ export const Profile: FC = () => {
     password: ''
   });
 
-  useEffect(() => {
-    dispatch(getUser());
-  }, [dispatch]);
-
+  // Убираем useEffect с getUser, так как пользователь уже загружен в App
   useEffect(() => {
     setFormValue((prevState) => ({
       ...prevState,

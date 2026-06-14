@@ -38,27 +38,46 @@
   margin: 0 auto;
   color: red;
 }
+
 ================================================================================
 ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\components\app\app.tsx
 ================================================================================
-import { ConstructorPage } from '@pages';
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
+import {
+  ConstructorPage,
+  Feed,
+  Login,
+  Register,
+  ForgotPassword,
+  ResetPassword,
+  Profile,
+  ProfileOrders,
+  NotFound404
+} from '@pages';
 import '../../index.css';
 import styles from './app.module.css';
-import { AppHeader } from '@components';
+import { AppHeader, Modal, IngredientDetails, OrderInfo } from '@components';
 import { Preloader } from '@ui';
 import { useEffect } from 'react';
 import { useDispatch, useSelector } from '../../services/store';
 import { fetchIngredients } from '../../services/slices/ingredientsSlice';
+import { getUser } from '../../services/slices/userSlice';
+import { ProtectedRoute } from '../protected-route/protected-route';
 
-const App = () => {
+const AppContent = () => {
   const dispatch = useDispatch();
-  
-  const { data: ingredients, loading: isIngredientsLoading, error } = useSelector(
-    state => state.ingredients
-  );
+  const location = useLocation();
+  const background = location.state?.background;
+
+  const {
+    data: ingredients,
+    loading: isIngredientsLoading,
+    error
+  } = useSelector((state) => state.ingredients);
 
   useEffect(() => {
     dispatch(fetchIngredients());
+    dispatch(getUser());
   }, [dispatch]);
 
   return (
@@ -71,7 +90,108 @@ const App = () => {
           {error}
         </div>
       ) : ingredients && ingredients.length > 0 ? (
-        <ConstructorPage />
+        <>
+          <Routes location={background || location}>
+            <Route path='/' element={<ConstructorPage />} />
+            <Route path='/feed' element={<Feed />} />
+            <Route path='/feed/:number' element={<OrderInfo />} />
+            <Route path='/ingredients/:id' element={<IngredientDetails />} />
+            <Route
+              path='/login'
+              element={
+                <ProtectedRoute onlyUnAuth>
+                  <Login />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path='/register'
+              element={
+                <ProtectedRoute onlyUnAuth>
+                  <Register />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path='/forgot-password'
+              element={
+                <ProtectedRoute onlyUnAuth>
+                  <ForgotPassword />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path='/reset-password'
+              element={
+                <ProtectedRoute onlyUnAuth>
+                  <ResetPassword />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path='/profile'
+              element={
+                <ProtectedRoute>
+                  <Profile />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path='/profile/orders'
+              element={
+                <ProtectedRoute>
+                  <ProfileOrders />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path='/profile/orders/:number'
+              element={
+                <ProtectedRoute>
+                  <OrderInfo />
+                </ProtectedRoute>
+              }
+            />
+            <Route path='*' element={<NotFound404 />} />
+          </Routes>
+          {background && (
+            <Routes>
+              <Route
+                path='/ingredients/:id'
+                element={
+                  <Modal
+                    title='Р”РµС‚Р°Р»Рё РёРЅРіСЂРµРґРёРµРЅС‚Р°'
+                    onClose={() => window.history.back()}
+                  >
+                    <IngredientDetails />
+                  </Modal>
+                }
+              />
+              <Route
+                path='/feed/:number'
+                element={
+                  <Modal
+                    title='Р”РµС‚Р°Р»Рё Р·Р°РєР°Р·Р°'
+                    onClose={() => window.history.back()}
+                  >
+                    <OrderInfo />
+                  </Modal>
+                }
+              />
+              <Route
+                path='/profile/orders/:number'
+                element={
+                  <Modal
+                    title='Р”РµС‚Р°Р»Рё Р·Р°РєР°Р·Р°'
+                    onClose={() => window.history.back()}
+                  >
+                    <OrderInfo />
+                  </Modal>
+                }
+              />
+            </Routes>
+          )}
+        </>
       ) : (
         <div className={`${styles.title} text text_type_main-medium pt-4`}>
           РќРµС‚ РёРЅРіСЂРµРґРёРµРЅС‚РѕРІ
@@ -81,14 +201,25 @@ const App = () => {
   );
 };
 
+const App = () => (
+  <BrowserRouter>
+    <AppContent />
+  </BrowserRouter>
+);
+
 export default App;
+
 ================================================================================
 ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\components\app-header\app-header.tsx
 ================================================================================
 import { FC } from 'react';
+import { useSelector } from '../../services/store';
 import { AppHeaderUI } from '@ui';
 
-export const AppHeader: FC = () => <AppHeaderUI userName='' />;
+export const AppHeader: FC = () => {
+  const { user } = useSelector((state) => state.user);
+  return <AppHeaderUI userName={user?.name} />;
+};
 
 ================================================================================
 ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\components\app-header\index.ts
@@ -101,24 +232,47 @@ export { AppHeader } from './app-header';
 import { FC, useMemo } from 'react';
 import { TConstructorIngredient } from '@utils-types';
 import { BurgerConstructorUI } from '@ui';
+import { useDispatch, useSelector } from '../../services/store';
+import { clearConstructor } from '../../services/slices/constructorSlice';
+import {
+  createOrder,
+  closeOrderModal
+} from '../../services/slices/ordersSlice';
 
 export const BurgerConstructor: FC = () => {
-  /** TODO: РІР·СЏС‚СЊ РїРµСЂРµРјРµРЅРЅС‹Рµ constructorItems, orderRequest Рё orderModalData РёР· СЃС‚РѕСЂР° */
+  const dispatch = useDispatch();
+
+  const { bun, ingredients } = useSelector((state) => state.burgerConstructor);
+  const { orderRequest, orderModalData } = useSelector((state) => state.orders);
+  const { user } = useSelector((state) => state.user);
+
   const constructorItems = {
-    bun: {
-      price: 0
-    },
-    ingredients: []
+    bun: bun,
+    ingredients: ingredients
   };
-
-  const orderRequest = false;
-
-  const orderModalData = null;
 
   const onOrderClick = () => {
     if (!constructorItems.bun || orderRequest) return;
+
+    if (!user) {
+      window.location.href = '/login';
+      return;
+    }
+
+    const ingredientsIds = [
+      constructorItems.bun._id,
+      ...constructorItems.ingredients.map((item) => item._id),
+      constructorItems.bun._id
+    ];
+
+    dispatch(createOrder(ingredientsIds)).then(() => {
+      dispatch(clearConstructor());
+    });
   };
-  const closeOrderModal = () => {};
+
+  const closeOrderModalHandler = () => {
+    dispatch(closeOrderModal());
+  };
 
   const price = useMemo(
     () =>
@@ -130,8 +284,6 @@ export const BurgerConstructor: FC = () => {
     [constructorItems]
   );
 
-  return null;
-
   return (
     <BurgerConstructorUI
       price={price}
@@ -139,7 +291,7 @@ export const BurgerConstructor: FC = () => {
       constructorItems={constructorItems}
       orderModalData={orderModalData}
       onOrderClick={onOrderClick}
-      closeOrderModal={closeOrderModal}
+      closeOrderModal={closeOrderModalHandler}
     />
   );
 };
@@ -155,14 +307,28 @@ export { BurgerConstructor } from './burger-constructor';
 import { FC, memo } from 'react';
 import { BurgerConstructorElementUI } from '@ui';
 import { BurgerConstructorElementProps } from './type';
+import { useDispatch } from '../../services/store';
+import {
+  moveIngredientUp,
+  moveIngredientDown,
+  removeIngredient
+} from '../../services/slices/constructorSlice';
 
 export const BurgerConstructorElement: FC<BurgerConstructorElementProps> = memo(
   ({ ingredient, index, totalItems }) => {
-    const handleMoveDown = () => {};
+    const dispatch = useDispatch();
 
-    const handleMoveUp = () => {};
+    const handleMoveDown = () => {
+      dispatch(moveIngredientDown(index));
+    };
 
-    const handleClose = () => {};
+    const handleMoveUp = () => {
+      dispatch(moveIngredientUp(index));
+    };
+
+    const handleClose = () => {
+      dispatch(removeIngredient(ingredient.id));
+    };
 
     return (
       <BurgerConstructorElementUI
@@ -198,15 +364,19 @@ export type BurgerConstructorElementProps = {
 ================================================================================
 import { FC, memo } from 'react';
 import { useLocation } from 'react-router-dom';
-
 import { BurgerIngredientUI } from '@ui';
 import { TBurgerIngredientProps } from './type';
+import { useDispatch } from '../../services/store';
+import { addIngredient } from '../../services/slices/constructorSlice';
 
 export const BurgerIngredient: FC<TBurgerIngredientProps> = memo(
   ({ ingredient, count }) => {
     const location = useLocation();
+    const dispatch = useDispatch();
 
-    const handleAdd = () => {};
+    const handleAdd = () => {
+      dispatch(addIngredient(ingredient));
+    };
 
     return (
       <BurgerIngredientUI
@@ -239,15 +409,21 @@ export type TBurgerIngredientProps = {
 ================================================================================
 import { useState, useRef, useEffect, FC } from 'react';
 import { useInView } from 'react-intersection-observer';
-
-import { TTabMode } from '@utils-types';
+import { TTabMode, TIngredient } from '@utils-types';
 import { BurgerIngredientsUI } from '../ui/burger-ingredients';
+import { useSelector } from '../../services/store';
 
 export const BurgerIngredients: FC = () => {
-  /** TODO: РІР·СЏС‚СЊ РїРµСЂРµРјРµРЅРЅС‹Рµ РёР· СЃС‚РѕСЂР° */
-  const buns = [];
-  const mains = [];
-  const sauces = [];
+  const { data: ingredients } = useSelector((state) => state.ingredients);
+  const { bun, ingredients: constructorIngredients } = useSelector(
+    (state) => state.burgerConstructor
+  );
+
+  const buns = ingredients.filter((item: TIngredient) => item.type === 'bun');
+  const mains = ingredients.filter((item: TIngredient) => item.type === 'main');
+  const sauces = ingredients.filter(
+    (item: TIngredient) => item.type === 'sauce'
+  );
 
   const [currentTab, setCurrentTab] = useState<TTabMode>('bun');
   const titleBunRef = useRef<HTMLHeadingElement>(null);
@@ -286,8 +462,6 @@ export const BurgerIngredients: FC = () => {
       titleSaucesRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  return null;
-
   return (
     <BurgerIngredientsUI
       currentTab={currentTab}
@@ -314,9 +488,9 @@ export { BurgerIngredients } from './burger-ingredients';
 ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\components\feed-info\feed-info.tsx
 ================================================================================
 import { FC } from 'react';
-
 import { TOrder } from '@utils-types';
 import { FeedInfoUI } from '../ui/feed-info';
+import { useSelector } from '../../services/store';
 
 const getOrders = (orders: TOrder[], status: string): number[] =>
   orders
@@ -325,12 +499,10 @@ const getOrders = (orders: TOrder[], status: string): number[] =>
     .slice(0, 20);
 
 export const FeedInfo: FC = () => {
-  /** TODO: РІР·СЏС‚СЊ РїРµСЂРµРјРµРЅРЅС‹Рµ РёР· СЃС‚РѕСЂР° */
-  const orders: TOrder[] = [];
-  const feed = {};
+  const { orders, total, totalToday } = useSelector((state) => state.feed);
 
+  const feed = { total, totalToday };
   const readyOrders = getOrders(orders, 'done');
-
   const pendingOrders = getOrders(orders, 'pending');
 
   return (
@@ -356,12 +528,16 @@ export { IngredientDetails } from './ingredient-details';
 ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\components\ingredient-details\ingredient-details.tsx
 ================================================================================
 import { FC } from 'react';
+import { useParams } from 'react-router-dom';
 import { Preloader } from '../ui/preloader';
 import { IngredientDetailsUI } from '../ui/ingredient-details';
+import { useSelector } from '../../services/store';
 
 export const IngredientDetails: FC = () => {
-  /** TODO: РІР·СЏС‚СЊ РїРµСЂРµРјРµРЅРЅСѓСЋ РёР· СЃС‚РѕСЂР° */
-  const ingredientData = null;
+  const { id } = useParams<{ id: string }>();
+  const { data: ingredients } = useSelector((state) => state.ingredients);
+
+  const ingredientData = ingredients.find((item) => item._id === id);
 
   if (!ingredientData) {
     return <Preloader />;
@@ -382,29 +558,25 @@ import { forwardRef, useMemo } from 'react';
 import { TIngredientsCategoryProps } from './type';
 import { TIngredient } from '@utils-types';
 import { IngredientsCategoryUI } from '../ui/ingredients-category';
+import { useSelector } from '../../services/store';
 
 export const IngredientsCategory = forwardRef<
   HTMLUListElement,
   TIngredientsCategoryProps
 >(({ title, titleRef, ingredients }, ref) => {
-  /** TODO: РІР·СЏС‚СЊ РїРµСЂРµРјРµРЅРЅСѓСЋ РёР· СЃС‚РѕСЂР° */
-  const burgerConstructor = {
-    bun: {
-      _id: ''
-    },
-    ingredients: []
-  };
+  const { bun, ingredients: constructorIngredients } = useSelector(
+    (state) => state.burgerConstructor
+  );
 
   const ingredientsCounters = useMemo(() => {
-    const { bun, ingredients } = burgerConstructor;
     const counters: { [key: string]: number } = {};
-    ingredients.forEach((ingredient: TIngredient) => {
+    constructorIngredients.forEach((ingredient: TIngredient) => {
       if (!counters[ingredient._id]) counters[ingredient._id] = 0;
       counters[ingredient._id]++;
     });
     if (bun) counters[bun._id] = 2;
     return counters;
-  }, [burgerConstructor]);
+  }, [bun, constructorIngredients]);
 
   return (
     <IngredientsCategoryUI
@@ -485,18 +657,16 @@ export { OrderCard } from './order-card';
 ================================================================================
 import { FC, memo, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
-
 import { OrderCardProps } from './type';
 import { TIngredient } from '@utils-types';
 import { OrderCardUI } from '../ui/order-card';
+import { useSelector } from '../../services/store';
 
 const maxIngredients = 6;
 
 export const OrderCard: FC<OrderCardProps> = memo(({ order }) => {
   const location = useLocation();
-
-  /** TODO: РІР·СЏС‚СЊ РїРµСЂРµРјРµРЅРЅСѓСЋ РёР· СЃС‚РѕСЂР° */
-  const ingredients: TIngredient[] = [];
+  const { data: ingredients } = useSelector((state) => state.ingredients);
 
   const orderInfo = useMemo(() => {
     if (!ingredients.length) return null;
@@ -558,26 +728,28 @@ export { OrderInfo } from './order-info';
 ================================================================================
 ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\components\order-info\order-info.tsx
 ================================================================================
-import { FC, useMemo } from 'react';
+import { FC, useMemo, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import { Preloader } from '../ui/preloader';
 import { OrderInfoUI } from '../ui/order-info';
 import { TIngredient } from '@utils-types';
+import { useSelector, useDispatch } from '../../services/store';
+import { fetchFeeds } from '../../services/slices/feedSlice';
 
 export const OrderInfo: FC = () => {
-  /** TODO: РІР·СЏС‚СЊ РїРµСЂРµРјРµРЅРЅС‹Рµ orderData Рё ingredients РёР· СЃС‚РѕСЂР° */
-  const orderData = {
-    createdAt: '',
-    ingredients: [],
-    _id: '',
-    status: '',
-    name: '',
-    updatedAt: 'string',
-    number: 0
-  };
+  const { number } = useParams<{ number: string }>();
+  const dispatch = useDispatch();
+  const { orders } = useSelector((state) => state.feed);
+  const { data: ingredients } = useSelector((state) => state.ingredients);
 
-  const ingredients: TIngredient[] = [];
+  useEffect(() => {
+    if (!orders.length) {
+      dispatch(fetchFeeds());
+    }
+  }, [dispatch, orders.length]);
 
-  /* Р“РѕС‚РѕРІРёРј РґР°РЅРЅС‹Рµ РґР»СЏ РѕС‚РѕР±СЂР°Р¶РµРЅРёСЏ */
+  const orderData = orders.find((order) => order.number === Number(number));
+
   const orderInfo = useMemo(() => {
     if (!orderData || !ingredients.length) return null;
 
@@ -600,7 +772,6 @@ export const OrderInfo: FC = () => {
         } else {
           acc[item].count++;
         }
-
         return acc;
       },
       {}
@@ -706,13 +877,21 @@ export { ProfileMenu } from './profile-menu';
 ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\components\profile-menu\profile-menu.tsx
 ================================================================================
 import { FC } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { ProfileMenuUI } from '@ui';
+import { useDispatch } from '../../services/store';
+import { logout } from '../../services/slices/userSlice';
 
 export const ProfileMenu: FC = () => {
   const { pathname } = useLocation();
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
 
-  const handleLogout = () => {};
+  const handleLogout = () => {
+    dispatch(logout()).then(() => {
+      navigate('/login');
+    });
+  };
 
   return <ProfileMenuUI handleLogout={handleLogout} pathname={pathname} />;
 };
@@ -720,9 +899,43 @@ export const ProfileMenu: FC = () => {
 ================================================================================
 ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\components\protected-route\index.ts
 ================================================================================
+export { ProtectedRoute } from './protected-route';
+
 ================================================================================
 ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\components\protected-route\protected-route.tsx
 ================================================================================
+import { Navigate, useLocation } from 'react-router-dom';
+import { useSelector } from '../../services/store';
+import { Preloader } from '@ui';
+
+interface ProtectedRouteProps {
+  children: React.ReactElement;
+  onlyUnAuth?: boolean;
+}
+
+export const ProtectedRoute = ({
+  children,
+  onlyUnAuth = false
+}: ProtectedRouteProps) => {
+  const { user, isAuthChecked } = useSelector((state) => state.user);
+  const location = useLocation();
+
+  if (!isAuthChecked) {
+    return <Preloader />;
+  }
+
+  if (onlyUnAuth && user) {
+    const from = location.state?.from || { pathname: '/' };
+    return <Navigate to={from} />;
+  }
+
+  if (!onlyUnAuth && !user) {
+    return <Navigate to='/login' state={{ from: location }} />;
+  }
+
+  return children;
+};
+
 ================================================================================
 ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\components\ui\app-header\app-header.module.css
 ================================================================================
@@ -3130,6 +3343,7 @@ export * from './order-info';
 export * from './order-status';
 export * from './orders-list';
 export * from './profile-menu';
+export * from './protected-route';
 
 ================================================================================
 ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\pages\constructor-page\constructor-page.module.css
@@ -3160,25 +3374,34 @@ export * from './profile-menu';
 ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\pages\constructor-page\constructor-page.tsx
 ================================================================================
 import { useSelector } from '../../services/store';
-
 import styles from './constructor-page.module.css';
-
-import { BurgerIngredients } from '../../components';
-import { BurgerConstructor } from '../../components';
+import { BurgerIngredients, BurgerConstructor } from '../../components';
 import { Preloader } from '../../components/ui';
 import { FC } from 'react';
 
-export const ConstructorPage: FC = () => (
-  <main className={styles.containerMain}>
-    <h1 className={`${styles.title} text text_type_main-large mt-10 mb-5 pl-5`}>
-      РЎРѕР±РµСЂРёС‚Рµ Р±СѓСЂРіРµСЂ
-    </h1>
-    <div className={`${styles.main} pl-5 pr-5`}>
-      <BurgerIngredients />
-      <BurgerConstructor />
-    </div>
-  </main>
-);
+export const ConstructorPage: FC = () => {
+  const { loading: isIngredientsLoading } = useSelector(
+    (state) => state.ingredients
+  );
+
+  if (isIngredientsLoading) {
+    return <Preloader />;
+  }
+
+  return (
+    <main className={styles.containerMain}>
+      <h1
+        className={`${styles.title} text text_type_main-large mt-10 mb-5 pl-5`}
+      >
+        РЎРѕР±РµСЂРёС‚Рµ Р±СѓСЂРіРµСЂ
+      </h1>
+      <div className={`${styles.main} pl-5 pr-5`}>
+        <BurgerIngredients />
+        <BurgerConstructor />
+      </div>
+    </main>
+  );
+};
 
 ================================================================================
 ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\pages\constructor-page\index.ts
@@ -3191,17 +3414,27 @@ export { ConstructorPage } from './constructor-page';
 import { Preloader } from '@ui';
 import { FeedUI } from '@ui-pages';
 import { TOrder } from '@utils-types';
-import { FC } from 'react';
+import { FC, useEffect } from 'react';
+import { useDispatch, useSelector } from '../../services/store';
+import { fetchFeeds } from '../../services/slices/feedSlice';
 
 export const Feed: FC = () => {
-  /** TODO: РІР·СЏС‚СЊ РїРµСЂРµРјРµРЅРЅСѓСЋ РёР· СЃС‚РѕСЂР° */
-  const orders: TOrder[] = [];
+  const dispatch = useDispatch();
+  const { orders, loading } = useSelector((state) => state.feed);
 
-  if (!orders.length) {
+  useEffect(() => {
+    dispatch(fetchFeeds());
+  }, [dispatch]);
+
+  const handleGetFeeds = () => {
+    dispatch(fetchFeeds());
+  };
+
+  if (loading && !orders.length) {
     return <Preloader />;
   }
 
-  <FeedUI orders={orders} handleGetFeeds={() => {}} />;
+  return <FeedUI orders={orders} handleGetFeeds={handleGetFeeds} />;
 };
 
 ================================================================================
@@ -3261,18 +3494,33 @@ export { Login } from './login';
 ================================================================================
 import { FC, SyntheticEvent, useState } from 'react';
 import { LoginUI } from '@ui-pages';
+import { useDispatch } from '../../services/store';
+import { loginUser } from '../../services/slices/userSlice';
+import { useNavigate } from 'react-router-dom';
 
 export const Login: FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState<string>('');
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   const handleSubmit = (e: SyntheticEvent) => {
     e.preventDefault();
+    setError('');
+    dispatch(loginUser({ email, password }))
+      .unwrap()
+      .then(() => {
+        navigate('/');
+      })
+      .catch((err) => {
+        setError(err.message || 'РћС€РёР±РєР° РІС…РѕРґР°');
+      });
   };
 
   return (
     <LoginUI
-      errorText=''
+      errorText={error}
       email={email}
       setEmail={setEmail}
       password={password}
@@ -3308,19 +3556,22 @@ export { Profile } from './profile';
 ================================================================================
 import { ProfileUI } from '@ui-pages';
 import { FC, SyntheticEvent, useEffect, useState } from 'react';
+import { useDispatch, useSelector } from '../../services/store';
+import { updateUser, getUser } from '../../services/slices/userSlice';
 
 export const Profile: FC = () => {
-  /** TODO: РІР·СЏС‚СЊ РїРµСЂРµРјРµРЅРЅСѓСЋ РёР· СЃС‚РѕСЂР° */
-  const user = {
-    name: '',
-    email: ''
-  };
+  const dispatch = useDispatch();
+  const { user, updateUserRequest, error } = useSelector((state) => state.user);
 
   const [formValue, setFormValue] = useState({
-    name: user.name,
-    email: user.email,
+    name: user?.name || '',
+    email: user?.email || '',
     password: ''
   });
+
+  useEffect(() => {
+    dispatch(getUser());
+  }, [dispatch]);
 
   useEffect(() => {
     setFormValue((prevState) => ({
@@ -3337,13 +3588,24 @@ export const Profile: FC = () => {
 
   const handleSubmit = (e: SyntheticEvent) => {
     e.preventDefault();
+    dispatch(
+      updateUser({
+        name: formValue.name,
+        email: formValue.email,
+        password: formValue.password || undefined
+      })
+    )
+      .unwrap()
+      .then(() => {
+        setFormValue((prev) => ({ ...prev, password: '' }));
+      });
   };
 
   const handleCancel = (e: SyntheticEvent) => {
     e.preventDefault();
     setFormValue({
-      name: user.name,
-      email: user.email,
+      name: user?.name || '',
+      email: user?.email || '',
       password: ''
     });
   };
@@ -3362,10 +3624,9 @@ export const Profile: FC = () => {
       handleCancel={handleCancel}
       handleSubmit={handleSubmit}
       handleInputChange={handleInputChange}
+      updateUserError={error || undefined}
     />
   );
-
-  return null;
 };
 
 ================================================================================
@@ -3377,12 +3638,17 @@ export { ProfileOrders } from './profile-orders';
 ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\pages\profile-orders\profile-orders.tsx
 ================================================================================
 import { ProfileOrdersUI } from '@ui-pages';
-import { TOrder } from '@utils-types';
-import { FC } from 'react';
+import { FC, useEffect } from 'react';
+import { useDispatch, useSelector } from '../../services/store';
+import { fetchUserOrders } from '../../services/slices/feedSlice';
 
 export const ProfileOrders: FC = () => {
-  /** TODO: РІР·СЏС‚СЊ РїРµСЂРµРјРµРЅРЅСѓСЋ РёР· СЃС‚РѕСЂР° */
-  const orders: TOrder[] = [];
+  const dispatch = useDispatch();
+  const { orders } = useSelector((state) => state.feed);
+
+  useEffect(() => {
+    dispatch(fetchUserOrders());
+  }, [dispatch]);
 
   return <ProfileOrdersUI orders={orders} />;
 };
@@ -3397,19 +3663,34 @@ export { Register } from './register';
 ================================================================================
 import { FC, SyntheticEvent, useState } from 'react';
 import { RegisterUI } from '@ui-pages';
+import { useDispatch } from '../../services/store';
+import { registerUser } from '../../services/slices/userSlice';
+import { useNavigate } from 'react-router-dom';
 
 export const Register: FC = () => {
   const [userName, setUserName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState<string>('');
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   const handleSubmit = (e: SyntheticEvent) => {
     e.preventDefault();
+    setError('');
+    dispatch(registerUser({ name: userName, email, password }))
+      .unwrap()
+      .then(() => {
+        navigate('/');
+      })
+      .catch((err) => {
+        setError(err.message || 'РћС€РёР±РєР° СЂРµРіРёСЃС‚СЂР°С†РёРё');
+      });
   };
 
   return (
     <RegisterUI
-      errorText=''
+      errorText={error}
       email={email}
       userName={userName}
       password={password}
@@ -3486,6 +3767,149 @@ export * from './reset-password';
 ================================================================================
 ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\services\slices\constructorSlice.ts
 ================================================================================
+import { createSlice, PayloadAction, nanoid } from '@reduxjs/toolkit';
+import { TConstructorIngredient, TIngredient } from '../../utils/types';
+
+interface ConstructorState {
+  bun: TConstructorIngredient | null;
+  ingredients: TConstructorIngredient[];
+}
+
+const initialState: ConstructorState = {
+  bun: null,
+  ingredients: []
+};
+
+const constructorSlice = createSlice({
+  name: 'burgerConstructor',
+  initialState,
+  reducers: {
+    addIngredient: {
+      reducer: (state, action: PayloadAction<TConstructorIngredient>) => {
+        if (action.payload.type === 'bun') {
+          state.bun = action.payload;
+        } else {
+          state.ingredients.push(action.payload);
+        }
+      },
+      prepare: (ingredient: TIngredient) => ({
+        payload: { ...ingredient, id: nanoid() }
+      })
+    },
+    removeIngredient: (state, action: PayloadAction<string>) => {
+      state.ingredients = state.ingredients.filter(
+        (item) => item.id !== action.payload
+      );
+    },
+    moveIngredientUp: (state, action: PayloadAction<number>) => {
+      const index = action.payload;
+      if (index > 0) {
+        const temp = state.ingredients[index];
+        state.ingredients[index] = state.ingredients[index - 1];
+        state.ingredients[index - 1] = temp;
+      }
+    },
+    moveIngredientDown: (state, action: PayloadAction<number>) => {
+      const index = action.payload;
+      if (index < state.ingredients.length - 1) {
+        const temp = state.ingredients[index];
+        state.ingredients[index] = state.ingredients[index + 1];
+        state.ingredients[index + 1] = temp;
+      }
+    },
+    clearConstructor: (state) => {
+      state.bun = null;
+      state.ingredients = [];
+    }
+  }
+});
+
+export const {
+  addIngredient,
+  removeIngredient,
+  moveIngredientUp,
+  moveIngredientDown,
+  clearConstructor
+} = constructorSlice.actions;
+
+export default constructorSlice.reducer;
+
+================================================================================
+ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\services\slices\feedSlice.ts
+================================================================================
+import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
+import { getFeedsApi, getOrdersApi } from '../../utils/burger-api';
+import { TOrder } from '../../utils/types';
+
+interface FeedState {
+  orders: TOrder[];
+  total: number;
+  totalToday: number;
+  loading: boolean;
+  error: string | null;
+}
+
+const initialState: FeedState = {
+  orders: [],
+  total: 0,
+  totalToday: 0,
+  loading: false,
+  error: null
+};
+
+export const fetchFeeds = createAsyncThunk('feed/fetchFeeds', async () => {
+  const response = await getFeedsApi();
+  return response;
+});
+
+export const fetchUserOrders = createAsyncThunk(
+  'feed/fetchUserOrders',
+  async () => {
+    const orders = await getOrdersApi();
+    return orders;
+  }
+);
+
+const feedSlice = createSlice({
+  name: 'feed',
+  initialState,
+  reducers: {},
+  extraReducers: (builder) => {
+    builder
+      .addCase(fetchFeeds.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchFeeds.fulfilled, (state, action) => {
+        state.loading = false;
+        state.orders = action.payload.orders;
+        state.total = action.payload.total;
+        state.totalToday = action.payload.totalToday;
+      })
+      .addCase(fetchFeeds.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message || 'РћС€РёР±РєР° Р·Р°РіСЂСѓР·РєРё Р»РµРЅС‚С‹ Р·Р°РєР°Р·РѕРІ';
+      })
+      .addCase(fetchUserOrders.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(
+        fetchUserOrders.fulfilled,
+        (state, action: PayloadAction<TOrder[]>) => {
+          state.loading = false;
+          state.orders = action.payload;
+        }
+      )
+      .addCase(fetchUserOrders.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message || 'РћС€РёР±РєР° Р·Р°РіСЂСѓР·РєРё Р·Р°РєР°Р·РѕРІ';
+      });
+  }
+});
+
+export default feedSlice.reducer;
+
 ================================================================================
 ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\services\slices\ingredientsSlice.ts
 ================================================================================
@@ -3508,9 +3932,7 @@ const initialState: IngredientsState = {
 export const fetchIngredients = createAsyncThunk(
   'ingredients/fetchIngredients',
   async () => {
-    console.log('Fetching ingredients...');
     const response = await getIngredientsApi();
-    console.log('Ingredients response:', response);
     return response;
   }
 );
@@ -3522,17 +3944,17 @@ const ingredientsSlice = createSlice({
   extraReducers: (builder) => {
     builder
       .addCase(fetchIngredients.pending, (state) => {
-        console.log('Loading ingredients...');
         state.loading = true;
         state.error = null;
       })
-      .addCase(fetchIngredients.fulfilled, (state, action: PayloadAction<TIngredient[]>) => {
-        console.log('Ingredients loaded:', action.payload.length);
-        state.loading = false;
-        state.data = action.payload;
-      })
+      .addCase(
+        fetchIngredients.fulfilled,
+        (state, action: PayloadAction<TIngredient[]>) => {
+          state.loading = false;
+          state.data = action.payload;
+        }
+      )
       .addCase(fetchIngredients.rejected, (state, action) => {
-        console.error('Error loading ingredients:', action.error);
         state.loading = false;
         state.error = action.error.message || 'РћС€РёР±РєР° Р·Р°РіСЂСѓР·РєРё РёРЅРіСЂРµРґРёРµРЅС‚РѕРІ';
       });
@@ -3540,32 +3962,251 @@ const ingredientsSlice = createSlice({
 });
 
 export default ingredientsSlice.reducer;
+
 ================================================================================
 ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\services\slices\ordersSlice.ts
 ================================================================================
+import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
+import { orderBurgerApi } from '../../utils/burger-api';
+import { TOrder } from '../../utils/types';
+
+interface OrdersState {
+  orderRequest: boolean;
+  orderModalData: TOrder | null;
+  error: string | null;
+}
+
+const initialState: OrdersState = {
+  orderRequest: false,
+  orderModalData: null,
+  error: null
+};
+
+export const createOrder = createAsyncThunk(
+  'orders/createOrder',
+  async (data: string[]) => {
+    const response = await orderBurgerApi(data);
+    // РџСЂРµРѕР±СЂР°Р·СѓРµРј РѕС‚РІРµС‚ РІ С„РѕСЂРјР°С‚ TOrder
+    const order: TOrder = {
+      _id: response.order._id,
+      status: response.order.status,
+      name: response.order.name,
+      createdAt: response.order.createdAt,
+      updatedAt: response.order.updatedAt,
+      number: response.order.number,
+      ingredients: data // РёСЃРїРѕР»СЊР·СѓРµРј РїРµСЂРµРґР°РЅРЅС‹Рµ РёРЅРіСЂРµРґРёРµРЅС‚С‹
+    };
+    return order;
+  }
+);
+
+const ordersSlice = createSlice({
+  name: 'orders',
+  initialState,
+  reducers: {
+    closeOrderModal: (state) => {
+      state.orderModalData = null;
+    }
+  },
+  extraReducers: (builder) => {
+    builder
+      .addCase(createOrder.pending, (state) => {
+        state.orderRequest = true;
+        state.error = null;
+      })
+      .addCase(
+        createOrder.fulfilled,
+        (state, action: PayloadAction<TOrder>) => {
+          state.orderRequest = false;
+          state.orderModalData = action.payload;
+        }
+      )
+      .addCase(createOrder.rejected, (state, action) => {
+        state.orderRequest = false;
+        state.error = action.error.message || 'РћС€РёР±РєР° СЃРѕР·РґР°РЅРёСЏ Р·Р°РєР°Р·Р°';
+      });
+  }
+});
+
+export const { closeOrderModal } = ordersSlice.actions;
+export default ordersSlice.reducer;
+
 ================================================================================
 ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\services\slices\userSlice.ts
 ================================================================================
+import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
+import {
+  loginUserApi,
+  registerUserApi,
+  getUserApi,
+  updateUserApi,
+  logoutApi,
+  TLoginData,
+  TRegisterData
+} from '../../utils/burger-api';
+import { TUser } from '../../utils/types';
+import { deleteCookie, setCookie } from '../../utils/cookie';
+
+interface UserState {
+  user: TUser | null;
+  isAuthChecked: boolean;
+  loginUserRequest: boolean;
+  registerUserRequest: boolean;
+  updateUserRequest: boolean;
+  error: string | null;
+}
+
+const initialState: UserState = {
+  user: null,
+  isAuthChecked: false,
+  loginUserRequest: false,
+  registerUserRequest: false,
+  updateUserRequest: false,
+  error: null
+};
+
+export const loginUser = createAsyncThunk(
+  'user/login',
+  async (data: TLoginData) => {
+    const response = await loginUserApi(data);
+    localStorage.setItem('refreshToken', response.refreshToken);
+    setCookie('accessToken', response.accessToken);
+    return response.user;
+  }
+);
+
+export const registerUser = createAsyncThunk(
+  'user/register',
+  async (data: TRegisterData) => {
+    const response = await registerUserApi(data);
+    localStorage.setItem('refreshToken', response.refreshToken);
+    setCookie('accessToken', response.accessToken);
+    return response.user;
+  }
+);
+
+export const getUser = createAsyncThunk('user/getUser', async () => {
+  const response = await getUserApi();
+  return response.user;
+});
+
+export const updateUser = createAsyncThunk(
+  'user/updateUser',
+  async (data: Partial<TRegisterData>) => {
+    const response = await updateUserApi(data);
+    return response.user;
+  }
+);
+
+export const logout = createAsyncThunk('user/logout', async () => {
+  const response = await logoutApi();
+  localStorage.removeItem('refreshToken');
+  deleteCookie('accessToken');
+  return response;
+});
+
+const userSlice = createSlice({
+  name: 'user',
+  initialState,
+  reducers: {
+    setAuthChecked: (state, action: PayloadAction<boolean>) => {
+      state.isAuthChecked = action.payload;
+    }
+  },
+  extraReducers: (builder) => {
+    builder
+      .addCase(loginUser.pending, (state) => {
+        state.loginUserRequest = true;
+        state.error = null;
+      })
+      .addCase(loginUser.fulfilled, (state, action: PayloadAction<TUser>) => {
+        state.loginUserRequest = false;
+        state.user = action.payload;
+        state.isAuthChecked = true;
+      })
+      .addCase(loginUser.rejected, (state, action) => {
+        state.loginUserRequest = false;
+        state.error = action.error.message || 'РћС€РёР±РєР° РІС…РѕРґР°';
+      })
+      .addCase(registerUser.pending, (state) => {
+        state.registerUserRequest = true;
+        state.error = null;
+      })
+      .addCase(
+        registerUser.fulfilled,
+        (state, action: PayloadAction<TUser>) => {
+          state.registerUserRequest = false;
+          state.user = action.payload;
+          state.isAuthChecked = true;
+        }
+      )
+      .addCase(registerUser.rejected, (state, action) => {
+        state.registerUserRequest = false;
+        state.error = action.error.message || 'РћС€РёР±РєР° СЂРµРіРёСЃС‚СЂР°С†РёРё';
+      })
+      .addCase(getUser.pending, (state) => {
+        state.isAuthChecked = false;
+      })
+      .addCase(getUser.fulfilled, (state, action: PayloadAction<TUser>) => {
+        state.user = action.payload;
+        state.isAuthChecked = true;
+      })
+      .addCase(getUser.rejected, (state) => {
+        state.user = null;
+        state.isAuthChecked = true;
+      })
+      .addCase(updateUser.pending, (state) => {
+        state.updateUserRequest = true;
+        state.error = null;
+      })
+      .addCase(updateUser.fulfilled, (state, action: PayloadAction<TUser>) => {
+        state.updateUserRequest = false;
+        state.user = action.payload;
+        state.error = null;
+      })
+      .addCase(updateUser.rejected, (state, action) => {
+        state.updateUserRequest = false;
+        state.error = action.error.message || 'РћС€РёР±РєР° РѕР±РЅРѕРІР»РµРЅРёСЏ РґР°РЅРЅС‹С…';
+      })
+      .addCase(logout.fulfilled, (state) => {
+        state.user = null;
+        state.isAuthChecked = true;
+      });
+  }
+});
+
+export const { setAuthChecked } = userSlice.actions;
+export default userSlice.reducer;
+
 ================================================================================
 ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\services\store.ts
 ================================================================================
 import { configureStore } from '@reduxjs/toolkit';
-
 import {
   TypedUseSelectorHook,
   useDispatch as dispatchHook,
   useSelector as selectorHook
 } from 'react-redux';
+import ingredientsReducer from './slices/ingredientsSlice';
+import constructorReducer from './slices/constructorSlice';
+import ordersReducer from './slices/ordersSlice';
+import userReducer from './slices/userSlice';
+import feedReducer from './slices/feedSlice';
 
-const rootReducer = () => {}; // Р—Р°РјРµРЅРёС‚СЊ РЅР° РёРјРїРѕСЂС‚ РЅР°СЃС‚РѕСЏС‰РµРіРѕ СЂРµРґСЊСЋСЃРµСЂР°
+const rootReducer = {
+  ingredients: ingredientsReducer,
+  burgerConstructor: constructorReducer,
+  orders: ordersReducer,
+  user: userReducer,
+  feed: feedReducer
+};
 
 const store = configureStore({
   reducer: rootReducer,
   devTools: process.env.NODE_ENV !== 'production'
 });
 
-export type RootState = ReturnType<typeof rootReducer>;
-
+export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;
 
 export const useDispatch: () => AppDispatch = () => dispatchHook();
@@ -4403,6 +5044,143 @@ export function deleteCookie(name: string) {
 ================================================================================
 ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\utils\mock-data.ts
 ================================================================================
+import { TIngredient } from './types';
+
+export const mockIngredients: TIngredient[] = [
+  {
+    _id: '60d3b41abdacab0026a733c6',
+    name: 'РљСЂР°С‚РѕСЂРЅР°СЏ Р±СѓР»РєР° N-200i',
+    type: 'bun',
+    proteins: 80,
+    fat: 20,
+    carbohydrates: 100,
+    calories: 420,
+    price: 125,
+    image: 'https://code.s3.yandex.net/react/code/bun-02.png',
+    image_large: 'https://code.s3.yandex.net/react/code/bun-02-large.png',
+    image_mobile: 'https://code.s3.yandex.net/react/code/bun-02-mobile.png'
+  },
+  {
+    _id: '60d3b41abdacab0026a733c8',
+    name: 'Р¤РёР»Рµ Р›СЋРјРёРЅРµСЃС†РµРЅС‚РЅРѕРіРѕ С‚РµС‚СЂР°РѕРґРѕРЅС‚РёРјС„РѕСЂРјР°',
+    type: 'main',
+    proteins: 44,
+    fat: 26,
+    carbohydrates: 85,
+    calories: 643,
+    price: 988,
+    image: 'https://code.s3.yandex.net/react/code/meat-03.png',
+    image_large: 'https://code.s3.yandex.net/react/code/meat-03-large.png',
+    image_mobile: 'https://code.s3.yandex.net/react/code/meat-03-mobile.png'
+  },
+  {
+    _id: '60d3b41abdacab0026a733c9',
+    name: 'РњСЏСЃРѕ Р±РµСЃСЃРјРµСЂС‚РЅС‹С… РјРѕР»Р»СЋСЃРєРѕРІ Protostomia',
+    type: 'main',
+    proteins: 433,
+    fat: 244,
+    carbohydrates: 33,
+    calories: 420,
+    price: 1337,
+    image: 'https://code.s3.yandex.net/react/code/meat-02.png',
+    image_large: 'https://code.s3.yandex.net/react/code/meat-02-large.png',
+    image_mobile: 'https://code.s3.yandex.net/react/code/meat-02-mobile.png'
+  },
+  {
+    _id: '60d3b41abdacab0026a733ca',
+    name: 'РЎРѕСѓСЃ Spicy-X',
+    type: 'sauce',
+    proteins: 30,
+    fat: 20,
+    carbohydrates: 40,
+    calories: 30,
+    price: 90,
+    image: 'https://code.s3.yandex.net/react/code/sauce-02.png',
+    image_large: 'https://code.s3.yandex.net/react/code/sauce-02-large.png',
+    image_mobile: 'https://code.s3.yandex.net/react/code/sauce-02-mobile.png'
+  },
+  {
+    _id: '60d3b41abdacab0026a733cb',
+    name: 'РҐСЂСѓСЃС‚СЏС‰РёРµ РјРёРЅРµСЂР°Р»СЊРЅС‹Рµ РєРѕР»СЊС†Р°',
+    type: 'main',
+    proteins: 808,
+    fat: 689,
+    carbohydrates: 609,
+    calories: 986,
+    price: 300,
+    image: 'https://code.s3.yandex.net/react/code/mineral_rings.png',
+    image_large:
+      'https://code.s3.yandex.net/react/code/mineral_rings-large.png',
+    image_mobile:
+      'https://code.s3.yandex.net/react/code/mineral_rings-mobile.png'
+  },
+  {
+    _id: '60d3b41abdacab0026a733cc',
+    name: 'РЎРѕСѓСЃ СЃ С€РёРїР°РјРё РђРЅС‚Р°СЂРёР°РЅСЃРєРѕРіРѕ РїР»РѕСЃРєРѕС…РѕРґС†Р°',
+    type: 'sauce',
+    proteins: 50,
+    fat: 99,
+    carbohydrates: 156,
+    calories: 345,
+    price: 88,
+    image: 'https://code.s3.yandex.net/react/code/sauce-01.png',
+    image_large: 'https://code.s3.yandex.net/react/code/sauce-01-large.png',
+    image_mobile: 'https://code.s3.yandex.net/react/code/sauce-01-mobile.png'
+  },
+  {
+    _id: '60d3b41abdacab0026a733cd',
+    name: 'РЎС‹СЂ СЃ Р°СЃС‚РµСЂРѕРёРґРЅРѕР№ РїР»РµСЃРµРЅСЊСЋ',
+    type: 'main',
+    proteins: 84,
+    fat: 48,
+    carbohydrates: 420,
+    calories: 3377,
+    price: 4142,
+    image: 'https://code.s3.yandex.net/react/code/cheese.png',
+    image_large: 'https://code.s3.yandex.net/react/code/cheese-large.png',
+    image_mobile: 'https://code.s3.yandex.net/react/code/cheese-mobile.png'
+  },
+  {
+    _id: '60d3b41abdacab0026a733ce',
+    name: 'Р‘РёРѕРєРѕС‚Р»РµС‚Р° РёР· РјР°СЂСЃРёР°РЅСЃРєРѕР№ РњР°РіРЅРѕР»РёРё',
+    type: 'main',
+    proteins: 420,
+    fat: 142,
+    carbohydrates: 242,
+    calories: 4242,
+    price: 424,
+    image: 'https://code.s3.yandex.net/react/code/meat-01.png',
+    image_large: 'https://code.s3.yandex.net/react/code/meat-01-large.png',
+    image_mobile: 'https://code.s3.yandex.net/react/code/meat-01-mobile.png'
+  },
+  {
+    _id: '60d3b41abdacab0026a733cf',
+    name: 'РЎРѕСѓСЃ С‚СЂР°РґРёС†РёРѕРЅРЅС‹Р№ РіР°Р»Р°РєС‚РёС‡РµСЃРєРёР№',
+    type: 'sauce',
+    proteins: 42,
+    fat: 24,
+    carbohydrates: 42,
+    calories: 99,
+    price: 15,
+    image: 'https://code.s3.yandex.net/react/code/sauce-04.png',
+    image_large: 'https://code.s3.yandex.net/react/code/sauce-04-large.png',
+    image_mobile: 'https://code.s3.yandex.net/react/code/sauce-04-mobile.png'
+  },
+  {
+    _id: '60d3b41abdacab0026a733d0',
+    name: 'Р¤Р»СЋРѕСЂРµСЃС†РµРЅС‚РЅР°СЏ Р±СѓР»РєР° R2-D3',
+    type: 'bun',
+    proteins: 44,
+    fat: 26,
+    carbohydrates: 85,
+    calories: 643,
+    price: 988,
+    image: 'https://code.s3.yandex.net/react/code/bun-01.png',
+    image_large: 'https://code.s3.yandex.net/react/code/bun-01-large.png',
+    image_mobile: 'https://code.s3.yandex.net/react/code/bun-01-mobile.png'
+  }
+];
+
 ================================================================================
 ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\utils\types.ts
 ================================================================================
@@ -4475,6 +5253,8 @@ body {
 ================================================================================
 import React from 'react';
 import * as ReactDOMClient from 'react-dom/client';
+import { Provider } from 'react-redux';
+import store from './services/store';
 import App from './components/app/app';
 
 const container = document.getElementById('root') as HTMLElement;
@@ -4482,7 +5262,9 @@ const root = ReactDOMClient.createRoot(container!);
 
 root.render(
   <React.StrictMode>
-    <App />
+    <Provider store={store}>
+      <App />
+    </Provider>
   </React.StrictMode>
 );
 

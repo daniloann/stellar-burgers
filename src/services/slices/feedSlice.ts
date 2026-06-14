@@ -3,18 +3,22 @@ import { getFeedsApi, getOrdersApi } from '../../utils/burger-api';
 import { TOrder } from '../../utils/types';
 
 interface FeedState {
-  orders: TOrder[];
+  publicOrders: TOrder[];
+  userOrders: TOrder[];
   total: number;
   totalToday: number;
   loading: boolean;
+  userOrdersLoading: boolean;
   error: string | null;
 }
 
 const initialState: FeedState = {
-  orders: [],
+  publicOrders: [],
+  userOrders: [],
   total: 0,
   totalToday: 0,
   loading: false,
+  userOrdersLoading: false,
   error: null
 };
 
@@ -43,7 +47,7 @@ const feedSlice = createSlice({
       })
       .addCase(fetchFeeds.fulfilled, (state, action) => {
         state.loading = false;
-        state.orders = action.payload.orders;
+        state.publicOrders = action.payload.orders;
         state.total = action.payload.total;
         state.totalToday = action.payload.totalToday;
       })
@@ -52,18 +56,18 @@ const feedSlice = createSlice({
         state.error = action.error.message || 'Ошибка загрузки ленты заказов';
       })
       .addCase(fetchUserOrders.pending, (state) => {
-        state.loading = true;
+        state.userOrdersLoading = true;
         state.error = null;
       })
       .addCase(
         fetchUserOrders.fulfilled,
         (state, action: PayloadAction<TOrder[]>) => {
-          state.loading = false;
-          state.orders = action.payload;
+          state.userOrdersLoading = false;
+          state.userOrders = action.payload;
         }
       )
       .addCase(fetchUserOrders.rejected, (state, action) => {
-        state.loading = false;
+        state.userOrdersLoading = false;
         state.error = action.error.message || 'Ошибка загрузки заказов';
       });
   }

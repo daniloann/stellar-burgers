@@ -2,23 +2,18 @@ import { FC, SyntheticEvent, useState } from 'react';
 import { LoginUI } from '@ui-pages';
 import { useDispatch } from '../../services/store';
 import { loginUser } from '../../services/slices/userSlice';
-import { useNavigate } from 'react-router-dom';
 
 export const Login: FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string>('');
   const dispatch = useDispatch();
-  const navigate = useNavigate();
 
   const handleSubmit = (e: SyntheticEvent) => {
     e.preventDefault();
     setError('');
     dispatch(loginUser({ email, password }))
       .unwrap()
-      .then(() => {
-        navigate('/');
-      })
       .catch((err) => {
         setError(err.message || 'Ошибка входа');
       });

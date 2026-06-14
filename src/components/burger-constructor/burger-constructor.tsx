@@ -7,9 +7,11 @@ import {
   createOrder,
   closeOrderModal
 } from '../../services/slices/ordersSlice';
+import { useNavigate } from 'react-router-dom';
 
 export const BurgerConstructor: FC = () => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   const { bun, ingredients } = useSelector((state) => state.burgerConstructor);
   const { orderRequest, orderModalData } = useSelector((state) => state.orders);
@@ -24,7 +26,7 @@ export const BurgerConstructor: FC = () => {
     if (!constructorItems.bun || orderRequest) return;
 
     if (!user) {
-      window.location.href = '/login';
+      navigate('/login');
       return;
     }
 
@@ -34,9 +36,14 @@ export const BurgerConstructor: FC = () => {
       constructorItems.bun._id
     ];
 
-    dispatch(createOrder(ingredientsIds)).then(() => {
-      dispatch(clearConstructor());
-    });
+    dispatch(createOrder(ingredientsIds))
+      .unwrap()
+      .then(() => {
+        dispatch(clearConstructor());
+      })
+      .catch((error) => {
+        console.error('Order creation failed:', error);
+      });
   };
 
   const closeOrderModalHandler = () => {
