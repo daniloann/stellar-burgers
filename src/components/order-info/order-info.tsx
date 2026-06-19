@@ -1,10 +1,11 @@
-import { FC, useMemo, useEffect, useState } from 'react';
+// src/components/order-info/order-info.tsx
+import { FC, useMemo, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { Preloader } from '../ui/preloader';
 import { OrderInfoUI } from '../ui/order-info';
 import { TIngredient } from '@utils-types';
-import { useSelector } from '../../services/store';
-import { getOrderByNumberApi } from '../../utils/burger-api';
+import { useDispatch, useSelector } from '../../services/store';
+import { fetchOrderByNumber, clearCurrentOrder } from '../../services/slices/feedSlice';
 
 type TIngredientsWithCount = {
   [key: string]: TIngredient & { count: number };
@@ -12,28 +13,27 @@ type TIngredientsWithCount = {
 
 export const OrderInfo: FC = () => {
   const { number } = useParams<{ number: string }>();
-  const [orderData, setOrderData] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const { data: ingredients } = useSelector((state) => state.ingredients);
+  const dispatch = useDispatch();
+  
+  // Получаем данные из стора через селекторы
+  const { currentOrder: orderData, currentOrderLoading: loading, data: ingredients } = 
+    useSelector((state) => ({
+      currentOrder: state.feed.currentOrder,
+      currentOrderLoading: state.feed.currentOrderLoading,
+      data: state.ingredients.data
+    }));
 
   useEffect(() => {
-    const loadOrder = async () => {
-      if (number) {
-        setLoading(true);
-        try {
-          const response = await getOrderByNumberApi(Number(number));
-          if (response.success && response.orders.length) {
-            setOrderData(response.orders[0]);
-          }
-        } catch (error) {
-          console.error('Failed to load order:', error);
-        } finally {
-          setLoading(false);
-        }
-      }
+    if (number) {
+      // Диспатчим thunk вместо прямого API-запроса
+      dispatch(fetchOrderByNumber(Number(number)));
+    }
+    
+    // Очищаем данные при размонтировании
+    return () => {
+      dispatch(clearCurrentOrder());
     };
-    loadOrder();
-  }, [number]);
+  }, [number, dispatch]);
 
   const orderInfo = useMemo(() => {
     if (!orderData || !ingredients.length) return null;

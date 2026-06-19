@@ -238,9 +238,11 @@ import {
   createOrder,
   closeOrderModal
 } from '../../services/slices/ordersSlice';
+import { useNavigate } from 'react-router-dom';
 
 export const BurgerConstructor: FC = () => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   const { bun, ingredients } = useSelector((state) => state.burgerConstructor);
   const { orderRequest, orderModalData } = useSelector((state) => state.orders);
@@ -255,7 +257,7 @@ export const BurgerConstructor: FC = () => {
     if (!constructorItems.bun || orderRequest) return;
 
     if (!user) {
-      window.location.href = '/login';
+      navigate('/login');
       return;
     }
 
@@ -265,9 +267,14 @@ export const BurgerConstructor: FC = () => {
       constructorItems.bun._id
     ];
 
-    dispatch(createOrder(ingredientsIds)).then(() => {
-      dispatch(clearConstructor());
-    });
+    dispatch(createOrder(ingredientsIds))
+      .unwrap()
+      .then(() => {
+        dispatch(clearConstructor());
+      })
+      .catch((error) => {
+        console.error('Order creation failed:', error);
+      });
   };
 
   const closeOrderModalHandler = () => {
@@ -499,11 +506,13 @@ const getOrders = (orders: TOrder[], status: string): number[] =>
     .slice(0, 20);
 
 export const FeedInfo: FC = () => {
-  const { orders, total, totalToday } = useSelector((state) => state.feed);
+  const { publicOrders, total, totalToday } = useSelector(
+    (state) => state.feed
+  );
 
   const feed = { total, totalToday };
-  const readyOrders = getOrders(orders, 'done');
-  const pendingOrders = getOrders(orders, 'pending');
+  const readyOrders = getOrders(publicOrders, 'done');
+  const pendingOrders = getOrders(publicOrders, 'pending');
 
   return (
     <FeedInfoUI
@@ -728,54 +737,63 @@ export { OrderInfo } from './order-info';
 ================================================================================
 ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\components\order-info\order-info.tsx
 ================================================================================
-import { FC, useMemo, useEffect } from 'react';
+import { FC, useMemo, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Preloader } from '../ui/preloader';
 import { OrderInfoUI } from '../ui/order-info';
 import { TIngredient } from '@utils-types';
-import { useSelector, useDispatch } from '../../services/store';
-import { fetchFeeds } from '../../services/slices/feedSlice';
+import { useSelector } from '../../services/store';
+import { getOrderByNumberApi } from '../../utils/burger-api';
+
+type TIngredientsWithCount = {
+  [key: string]: TIngredient & { count: number };
+};
 
 export const OrderInfo: FC = () => {
   const { number } = useParams<{ number: string }>();
-  const dispatch = useDispatch();
-  const { orders } = useSelector((state) => state.feed);
+  const [orderData, setOrderData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   const { data: ingredients } = useSelector((state) => state.ingredients);
 
   useEffect(() => {
-    if (!orders.length) {
-      dispatch(fetchFeeds());
-    }
-  }, [dispatch, orders.length]);
-
-  const orderData = orders.find((order) => order.number === Number(number));
+    const loadOrder = async () => {
+      if (number) {
+        setLoading(true);
+        try {
+          const response = await getOrderByNumberApi(Number(number));
+          if (response.success && response.orders.length) {
+            setOrderData(response.orders[0]);
+          }
+        } catch (error) {
+          console.error('Failed to load order:', error);
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+    loadOrder();
+  }, [number]);
 
   const orderInfo = useMemo(() => {
     if (!orderData || !ingredients.length) return null;
 
     const date = new Date(orderData.createdAt);
+    const ingredientsInfo: TIngredientsWithCount = {};
 
-    type TIngredientsWithCount = {
-      [key: string]: TIngredient & { count: number };
-    };
-
-    const ingredientsInfo = orderData.ingredients.reduce(
-      (acc: TIngredientsWithCount, item) => {
-        if (!acc[item]) {
-          const ingredient = ingredients.find((ing) => ing._id === item);
-          if (ingredient) {
-            acc[item] = {
-              ...ingredient,
-              count: 1
-            };
-          }
-        } else {
-          acc[item].count++;
+    // РџСЂРѕС…РѕРґРёРј РїРѕ РёРЅРіСЂРµРґРёРµРЅС‚Р°Рј Р·Р°РєР°Р·Р° Рё СЃРѕР±РёСЂР°РµРј РёРЅС„РѕСЂРјР°С†РёСЋ
+    orderData.ingredients.forEach((item: string) => {
+      if (!ingredientsInfo[item]) {
+        const ingredient = ingredients.find((ing) => ing._id === item);
+        if (ingredient) {
+          ingredientsInfo[item] = {
+            ...ingredient,
+            count: 1
+          };
         }
-        return acc;
-      },
-      {}
-    );
+      } else {
+        ingredientsInfo[item].count++;
+      }
+    });
 
     const total = Object.values(ingredientsInfo).reduce(
       (acc, item) => acc + item.price * item.count,
@@ -790,7 +808,7 @@ export const OrderInfo: FC = () => {
     };
   }, [orderData, ingredients]);
 
-  if (!orderInfo) {
+  if (loading || !orderInfo) {
     return <Preloader />;
   }
 
@@ -981,6 +999,7 @@ export const ProtectedRoute = ({
 ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\components\ui\app-header\app-header.tsx
 ================================================================================
 import React, { FC } from 'react';
+import { NavLink } from 'react-router-dom';
 import styles from './app-header.module.css';
 import { TAppHeaderUIProps } from './type';
 import {
@@ -994,23 +1013,57 @@ export const AppHeaderUI: FC<TAppHeaderUIProps> = ({ userName }) => (
   <header className={styles.header}>
     <nav className={`${styles.menu} p-4`}>
       <div className={styles.menu_part_left}>
-        <>
-          <BurgerIcon type={'primary'} />
-          <p className='text text_type_main-default ml-2 mr-10'>РљРѕРЅСЃС‚СЂСѓРєС‚РѕСЂ</p>
-        </>
-        <>
-          <ListIcon type={'primary'} />
-          <p className='text text_type_main-default ml-2'>Р›РµРЅС‚Р° Р·Р°РєР°Р·РѕРІ</p>
-        </>
+        <NavLink
+          to='/'
+          className={({ isActive }) =>
+            `${styles.link} ${isActive ? styles.link_active : ''}`
+          }
+          end
+        >
+          {({ isActive }) => (
+            <>
+              <BurgerIcon type={isActive ? 'primary' : 'secondary'} />
+              <p className='text text_type_main-default ml-2 mr-10'>
+                РљРѕРЅСЃС‚СЂСѓРєС‚РѕСЂ
+              </p>
+            </>
+          )}
+        </NavLink>
+        <NavLink
+          to='/feed'
+          className={({ isActive }) =>
+            `${styles.link} ${isActive ? styles.link_active : ''}`
+          }
+        >
+          {({ isActive }) => (
+            <>
+              <ListIcon type={isActive ? 'primary' : 'secondary'} />
+              <p className='text text_type_main-default ml-2'>Р›РµРЅС‚Р° Р·Р°РєР°Р·РѕРІ</p>
+            </>
+          )}
+        </NavLink>
       </div>
       <div className={styles.logo}>
-        <Logo className='' />
+        <NavLink to='/'>
+          <Logo className='' />
+        </NavLink>
       </div>
       <div className={styles.link_position_last}>
-        <ProfileIcon type={'primary'} />
-        <p className='text text_type_main-default ml-2'>
-          {userName || 'Р›РёС‡РЅС‹Р№ РєР°Р±РёРЅРµС‚'}
-        </p>
+        <NavLink
+          to='/profile'
+          className={({ isActive }) =>
+            `${styles.link} ${isActive ? styles.link_active : ''}`
+          }
+        >
+          {({ isActive }) => (
+            <>
+              <ProfileIcon type={isActive ? 'primary' : 'secondary'} />
+              <p className='text text_type_main-default ml-2'>
+                {userName || 'Р›РёС‡РЅС‹Р№ РєР°Р±РёРЅРµС‚'}
+              </p>
+            </>
+          )}
+        </NavLink>
       </div>
     </nav>
   </header>
@@ -3413,14 +3466,13 @@ export { ConstructorPage } from './constructor-page';
 ================================================================================
 import { Preloader } from '@ui';
 import { FeedUI } from '@ui-pages';
-import { TOrder } from '@utils-types';
 import { FC, useEffect } from 'react';
 import { useDispatch, useSelector } from '../../services/store';
 import { fetchFeeds } from '../../services/slices/feedSlice';
 
 export const Feed: FC = () => {
   const dispatch = useDispatch();
-  const { orders, loading } = useSelector((state) => state.feed);
+  const { publicOrders, loading } = useSelector((state) => state.feed);
 
   useEffect(() => {
     dispatch(fetchFeeds());
@@ -3430,11 +3482,11 @@ export const Feed: FC = () => {
     dispatch(fetchFeeds());
   };
 
-  if (loading && !orders.length) {
+  if (loading && !publicOrders.length) {
     return <Preloader />;
   }
 
-  return <FeedUI orders={orders} handleGetFeeds={handleGetFeeds} />;
+  return <FeedUI orders={publicOrders} handleGetFeeds={handleGetFeeds} />;
 };
 
 ================================================================================
@@ -3496,23 +3548,18 @@ import { FC, SyntheticEvent, useState } from 'react';
 import { LoginUI } from '@ui-pages';
 import { useDispatch } from '../../services/store';
 import { loginUser } from '../../services/slices/userSlice';
-import { useNavigate } from 'react-router-dom';
 
 export const Login: FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string>('');
   const dispatch = useDispatch();
-  const navigate = useNavigate();
 
   const handleSubmit = (e: SyntheticEvent) => {
     e.preventDefault();
     setError('');
     dispatch(loginUser({ email, password }))
       .unwrap()
-      .then(() => {
-        navigate('/');
-      })
       .catch((err) => {
         setError(err.message || 'РћС€РёР±РєР° РІС…РѕРґР°');
       });
@@ -3557,7 +3604,7 @@ export { Profile } from './profile';
 import { ProfileUI } from '@ui-pages';
 import { FC, SyntheticEvent, useEffect, useState } from 'react';
 import { useDispatch, useSelector } from '../../services/store';
-import { updateUser, getUser } from '../../services/slices/userSlice';
+import { updateUser } from '../../services/slices/userSlice';
 
 export const Profile: FC = () => {
   const dispatch = useDispatch();
@@ -3569,10 +3616,7 @@ export const Profile: FC = () => {
     password: ''
   });
 
-  useEffect(() => {
-    dispatch(getUser());
-  }, [dispatch]);
-
+  // РЈР±РёСЂР°РµРј useEffect СЃ getUser, С‚Р°Рє РєР°Рє РїРѕР»СЊР·РѕРІР°С‚РµР»СЊ СѓР¶Рµ Р·Р°РіСЂСѓР¶РµРЅ РІ App
   useEffect(() => {
     setFormValue((prevState) => ({
       ...prevState,
@@ -3641,16 +3685,21 @@ import { ProfileOrdersUI } from '@ui-pages';
 import { FC, useEffect } from 'react';
 import { useDispatch, useSelector } from '../../services/store';
 import { fetchUserOrders } from '../../services/slices/feedSlice';
+import { Preloader } from '@ui';
 
 export const ProfileOrders: FC = () => {
   const dispatch = useDispatch();
-  const { orders } = useSelector((state) => state.feed);
+  const { userOrders, userOrdersLoading } = useSelector((state) => state.feed);
 
   useEffect(() => {
     dispatch(fetchUserOrders());
   }, [dispatch]);
 
-  return <ProfileOrdersUI orders={orders} />;
+  if (userOrdersLoading) {
+    return <Preloader />;
+  }
+
+  return <ProfileOrdersUI orders={userOrders} />;
 };
 
 ================================================================================
@@ -3665,7 +3714,6 @@ import { FC, SyntheticEvent, useState } from 'react';
 import { RegisterUI } from '@ui-pages';
 import { useDispatch } from '../../services/store';
 import { registerUser } from '../../services/slices/userSlice';
-import { useNavigate } from 'react-router-dom';
 
 export const Register: FC = () => {
   const [userName, setUserName] = useState('');
@@ -3673,16 +3721,12 @@ export const Register: FC = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string>('');
   const dispatch = useDispatch();
-  const navigate = useNavigate();
 
   const handleSubmit = (e: SyntheticEvent) => {
     e.preventDefault();
     setError('');
     dispatch(registerUser({ name: userName, email, password }))
       .unwrap()
-      .then(() => {
-        navigate('/');
-      })
       .catch((err) => {
         setError(err.message || 'РћС€РёР±РєР° СЂРµРіРёСЃС‚СЂР°С†РёРё');
       });
@@ -3842,18 +3886,22 @@ import { getFeedsApi, getOrdersApi } from '../../utils/burger-api';
 import { TOrder } from '../../utils/types';
 
 interface FeedState {
-  orders: TOrder[];
+  publicOrders: TOrder[];
+  userOrders: TOrder[];
   total: number;
   totalToday: number;
   loading: boolean;
+  userOrdersLoading: boolean;
   error: string | null;
 }
 
 const initialState: FeedState = {
-  orders: [],
+  publicOrders: [],
+  userOrders: [],
   total: 0,
   totalToday: 0,
   loading: false,
+  userOrdersLoading: false,
   error: null
 };
 
@@ -3882,7 +3930,7 @@ const feedSlice = createSlice({
       })
       .addCase(fetchFeeds.fulfilled, (state, action) => {
         state.loading = false;
-        state.orders = action.payload.orders;
+        state.publicOrders = action.payload.orders;
         state.total = action.payload.total;
         state.totalToday = action.payload.totalToday;
       })
@@ -3891,18 +3939,18 @@ const feedSlice = createSlice({
         state.error = action.error.message || 'РћС€РёР±РєР° Р·Р°РіСЂСѓР·РєРё Р»РµРЅС‚С‹ Р·Р°РєР°Р·РѕРІ';
       })
       .addCase(fetchUserOrders.pending, (state) => {
-        state.loading = true;
+        state.userOrdersLoading = true;
         state.error = null;
       })
       .addCase(
         fetchUserOrders.fulfilled,
         (state, action: PayloadAction<TOrder[]>) => {
-          state.loading = false;
-          state.orders = action.payload;
+          state.userOrdersLoading = false;
+          state.userOrders = action.payload;
         }
       )
       .addCase(fetchUserOrders.rejected, (state, action) => {
-        state.loading = false;
+        state.userOrdersLoading = false;
         state.error = action.error.message || 'РћС€РёР±РєР° Р·Р°РіСЂСѓР·РєРё Р·Р°РєР°Р·РѕРІ';
       });
   }
