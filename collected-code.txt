@@ -737,13 +737,14 @@ export { OrderInfo } from './order-info';
 ================================================================================
 ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\components\order-info\order-info.tsx
 ================================================================================
-import { FC, useMemo, useEffect, useState } from 'react';
+// src/components/order-info/order-info.tsx
+import { FC, useMemo, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { Preloader } from '../ui/preloader';
 import { OrderInfoUI } from '../ui/order-info';
 import { TIngredient } from '@utils-types';
-import { useSelector } from '../../services/store';
-import { getOrderByNumberApi } from '../../utils/burger-api';
+import { useDispatch, useSelector } from '../../services/store';
+import { fetchOrderByNumber, clearCurrentOrder } from '../../services/slices/feedSlice';
 
 type TIngredientsWithCount = {
   [key: string]: TIngredient & { count: number };
@@ -751,28 +752,27 @@ type TIngredientsWithCount = {
 
 export const OrderInfo: FC = () => {
   const { number } = useParams<{ number: string }>();
-  const [orderData, setOrderData] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const { data: ingredients } = useSelector((state) => state.ingredients);
+  const dispatch = useDispatch();
+  
+  // РџРѕР»СѓС‡Р°РµРј РґР°РЅРЅС‹Рµ РёР· СЃС‚РѕСЂР° С‡РµСЂРµР· СЃРµР»РµРєС‚РѕСЂС‹
+  const { currentOrder: orderData, currentOrderLoading: loading, data: ingredients } = 
+    useSelector((state) => ({
+      currentOrder: state.feed.currentOrder,
+      currentOrderLoading: state.feed.currentOrderLoading,
+      data: state.ingredients.data
+    }));
 
   useEffect(() => {
-    const loadOrder = async () => {
-      if (number) {
-        setLoading(true);
-        try {
-          const response = await getOrderByNumberApi(Number(number));
-          if (response.success && response.orders.length) {
-            setOrderData(response.orders[0]);
-          }
-        } catch (error) {
-          console.error('Failed to load order:', error);
-        } finally {
-          setLoading(false);
-        }
-      }
+    if (number) {
+      // Р”РёСЃРїР°С‚С‡РёРј thunk РІРјРµСЃС‚Рѕ РїСЂСЏРјРѕРіРѕ API-Р·Р°РїСЂРѕСЃР°
+      dispatch(fetchOrderByNumber(Number(number)));
+    }
+    
+    // РћС‡РёС‰Р°РµРј РґР°РЅРЅС‹Рµ РїСЂРё СЂР°Р·РјРѕРЅС‚РёСЂРѕРІР°РЅРёРё
+    return () => {
+      dispatch(clearCurrentOrder());
     };
-    loadOrder();
-  }, [number]);
+  }, [number, dispatch]);
 
   const orderInfo = useMemo(() => {
     if (!orderData || !ingredients.length) return null;
@@ -814,7 +814,6 @@ export const OrderInfo: FC = () => {
 
   return <OrderInfoUI orderInfo={orderInfo} />;
 };
-
 ================================================================================
 ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\components\order-status\index.ts
 ================================================================================
@@ -3881,8 +3880,9 @@ export default constructorSlice.reducer;
 ================================================================================
 ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\services\slices\feedSlice.ts
 ================================================================================
+// src/services/slices/feedSlice.ts
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import { getFeedsApi, getOrdersApi } from '../../utils/burger-api';
+import { getFeedsApi, getOrdersApi, getOrderByNumberApi } from '../../utils/burger-api';
 import { TOrder } from '../../utils/types';
 
 interface FeedState {
@@ -3892,6 +3892,8 @@ interface FeedState {
   totalToday: number;
   loading: boolean;
   userOrdersLoading: boolean;
+  currentOrder: TOrder | null; // Р”РѕР±Р°РІР»СЏРµРј РїРѕР»Рµ РґР»СЏ С‚РµРєСѓС‰РµРіРѕ Р·Р°РєР°Р·Р°
+  currentOrderLoading: boolean; // Р”РѕР±Р°РІР»СЏРµРј РїРѕР»Рµ РґР»СЏ СЃС‚Р°С‚СѓСЃР° Р·Р°РіСЂСѓР·РєРё
   error: string | null;
 }
 
@@ -3902,9 +3904,12 @@ const initialState: FeedState = {
   totalToday: 0,
   loading: false,
   userOrdersLoading: false,
+  currentOrder: null,
+  currentOrderLoading: false,
   error: null
 };
 
+// РЎСѓС‰РµСЃС‚РІСѓСЋС‰РёРµ thunk-Рё
 export const fetchFeeds = createAsyncThunk('feed/fetchFeeds', async () => {
   const response = await getFeedsApi();
   return response;
@@ -3918,12 +3923,31 @@ export const fetchUserOrders = createAsyncThunk(
   }
 );
 
+// РќРћР’Р«Р™ THUNK РґР»СЏ РїРѕР»СѓС‡РµРЅРёСЏ Р·Р°РєР°Р·Р° РїРѕ РЅРѕРјРµСЂСѓ
+export const fetchOrderByNumber = createAsyncThunk(
+  'feed/fetchOrderByNumber',
+  async (number: number) => {
+    const response = await getOrderByNumberApi(number);
+    if (response.success && response.orders.length) {
+      return response.orders[0];
+    }
+    throw new Error('Р—Р°РєР°Р· РЅРµ РЅР°Р№РґРµРЅ');
+  }
+);
+
 const feedSlice = createSlice({
   name: 'feed',
   initialState,
-  reducers: {},
+  reducers: {
+    clearCurrentOrder: (state) => {
+      state.currentOrder = null;
+      state.currentOrderLoading = false;
+      state.error = null;
+    }
+  },
   extraReducers: (builder) => {
     builder
+      // РЎСѓС‰РµСЃС‚РІСѓСЋС‰РёРµ СЂРµРґСЊСЋСЃРµСЂС‹
       .addCase(fetchFeeds.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -3952,12 +3976,30 @@ const feedSlice = createSlice({
       .addCase(fetchUserOrders.rejected, (state, action) => {
         state.userOrdersLoading = false;
         state.error = action.error.message || 'РћС€РёР±РєР° Р·Р°РіСЂСѓР·РєРё Р·Р°РєР°Р·РѕРІ';
+      })
+      // РќРћР’Р«Р• Р Р•Р”Р¬Р®РЎР•Р Р« РґР»СЏ fetchOrderByNumber
+      .addCase(fetchOrderByNumber.pending, (state) => {
+        state.currentOrderLoading = true;
+        state.currentOrder = null;
+        state.error = null;
+      })
+      .addCase(
+        fetchOrderByNumber.fulfilled,
+        (state, action: PayloadAction<TOrder>) => {
+          state.currentOrderLoading = false;
+          state.currentOrder = action.payload;
+        }
+      )
+      .addCase(fetchOrderByNumber.rejected, (state, action) => {
+        state.currentOrderLoading = false;
+        state.currentOrder = null;
+        state.error = action.error.message || 'РћС€РёР±РєР° Р·Р°РіСЂСѓР·РєРё Р·Р°РєР°Р·Р°';
       });
   }
 });
 
+export const { clearCurrentOrder } = feedSlice.actions;
 export default feedSlice.reducer;
-
 ================================================================================
 ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\services\slices\ingredientsSlice.ts
 ================================================================================

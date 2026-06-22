@@ -1,6 +1,10 @@
 // src/services/slices/feedSlice.ts
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import { getFeedsApi, getOrdersApi, getOrderByNumberApi } from '../../utils/burger-api';
+import {
+  getFeedsApi,
+  getOrdersApi,
+  getOrderByNumberApi
+} from '../../utils/burger-api';
 import { TOrder } from '../../utils/types';
 
 interface FeedState {

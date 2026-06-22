@@ -5,7 +5,10 @@ import { Preloader } from '../ui/preloader';
 import { OrderInfoUI } from '../ui/order-info';
 import { TIngredient } from '@utils-types';
 import { useDispatch, useSelector } from '../../services/store';
-import { fetchOrderByNumber, clearCurrentOrder } from '../../services/slices/feedSlice';
+import {
+  fetchOrderByNumber,
+  clearCurrentOrder
+} from '../../services/slices/feedSlice';
 
 type TIngredientsWithCount = {
   [key: string]: TIngredient & { count: number };
@@ -14,21 +17,24 @@ type TIngredientsWithCount = {
 export const OrderInfo: FC = () => {
   const { number } = useParams<{ number: string }>();
   const dispatch = useDispatch();
-  
+
   // Получаем данные из стора через селекторы
-  const { currentOrder: orderData, currentOrderLoading: loading, data: ingredients } = 
-    useSelector((state) => ({
-      currentOrder: state.feed.currentOrder,
-      currentOrderLoading: state.feed.currentOrderLoading,
-      data: state.ingredients.data
-    }));
+  const {
+    currentOrder: orderData,
+    currentOrderLoading: loading,
+    data: ingredients
+  } = useSelector((state) => ({
+    currentOrder: state.feed.currentOrder,
+    currentOrderLoading: state.feed.currentOrderLoading,
+    data: state.ingredients.data
+  }));
 
   useEffect(() => {
     if (number) {
       // Диспатчим thunk вместо прямого API-запроса
       dispatch(fetchOrderByNumber(Number(number)));
     }
-    
+
     // Очищаем данные при размонтировании
     return () => {
       dispatch(clearCurrentOrder());
