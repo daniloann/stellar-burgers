@@ -8,19 +8,19 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: 'html',
   use: {
-    baseURL: 'http://localhost:4000', // Меняем порт на 4000
-    trace: 'on-first-retry'
+    baseURL: 'http://localhost:4000',
+    trace: 'on-first-retry',
   },
   projects: [
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'] }
-    }
+      use: { ...devices['Desktop Chrome'] },
+    },
   ],
   webServer: {
     command: 'npm run start',
-    url: 'http://localhost:4000', // Меняем порт на 4000
+    url: 'http://localhost:4000',
     reuseExistingServer: !process.env.CI,
-    timeout: 120 * 1000 // Даем больше времени на запуск
-  }
+    timeout: 120 * 1000,
+  },
 });
