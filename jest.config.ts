@@ -4,7 +4,10 @@ const config: Config.InitialOptions = {
   preset: 'ts-jest',
   testEnvironment: 'jsdom',
   setupFilesAfterEnv: ['<rootDir>/src/setupTests.ts'],
-  testMatch: ['**/__tests__/**/*.test.ts', '**/__tests__/**/*.test.tsx'],
+  testMatch: [
+    '**/__tests__/**/*.test.ts',
+    '**/__tests__/**/*.test.tsx'
+  ],
   testPathIgnorePatterns: [
     '/node_modules/',
     '/tests/' // Исключаем папку с Playwright тестами
@@ -26,7 +29,7 @@ const config: Config.InitialOptions = {
   ],
   coverageThreshold: {
     global: {
-      branches: 50, // Снижаем порог временно, чтобы увидеть прогресс
+      branches: 50,
       functions: 50,
       lines: 50,
       statements: 50

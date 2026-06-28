@@ -1,4 +1,4 @@
-import { TIngredient } from './types';
+import { TIngredient, TOrder } from './types';
 
 export const mockIngredients: TIngredient[] = [
   {
@@ -63,10 +63,8 @@ export const mockIngredients: TIngredient[] = [
     calories: 986,
     price: 300,
     image: 'https://code.s3.yandex.net/react/code/mineral_rings.png',
-    image_large:
-      'https://code.s3.yandex.net/react/code/mineral_rings-large.png',
-    image_mobile:
-      'https://code.s3.yandex.net/react/code/mineral_rings-mobile.png'
+    image_large: 'https://code.s3.yandex.net/react/code/mineral_rings-large.png',
+    image_mobile: 'https://code.s3.yandex.net/react/code/mineral_rings-mobile.png'
   },
   {
     _id: '60d3b41abdacab0026a733cc',
@@ -134,3 +132,61 @@ export const mockIngredients: TIngredient[] = [
     image_mobile: 'https://code.s3.yandex.net/react/code/bun-01-mobile.png'
   }
 ];
+
+// Моковые данные для заказов
+export const mockOrder: TOrder = {
+  _id: '66a8e6d5f3b4c5d6e7f8g9h0',
+  status: 'done',
+  name: 'Флюоресцентный бургер',
+  createdAt: '2024-01-25T10:00:00.000Z',
+  updatedAt: '2024-01-25T10:05:00.000Z',
+  number: 12345,
+  ingredients: [
+    '60d3b41abdacab0026a733c6', // булка
+    '60d3b41abdacab0026a733c8', // начинка
+    '60d3b41abdacab0026a733ca'  // соус
+  ]
+};
+
+export const mockOrders: TOrder[] = [
+  mockOrder,
+  {
+    _id: '66a8e6d5f3b4c5d6e7f8g9h1',
+    status: 'pending',
+    name: 'Бессмертный бургер',
+    createdAt: '2024-01-25T09:00:00.000Z',
+    updatedAt: '2024-01-25T09:02:00.000Z',
+    number: 12344,
+    ingredients: [
+      '60d3b41abdacab0026a733d0', // другая булка
+      '60d3b41abdacab0026a733c9', // другая начинка
+      '60d3b41abdacab0026a733cc'  // другой соус
+    ]
+  }
+];
+
+// Моковый ответ для создания заказа
+export const mockOrderResponse = {
+  success: true,
+  order: {
+    _id: '66a8e6d5f3b4c5d6e7f8g9h0',
+    status: 'done',
+    name: 'Флюоресцентный бургер',
+    createdAt: '2024-01-25T10:00:00.000Z',
+    updatedAt: '2024-01-25T10:05:00.000Z',
+    number: 12345,
+    ingredients: [
+      '60d3b41abdacab0026a733c6',
+      '60d3b41abdacab0026a733c8',
+      '60d3b41abdacab0026a733ca'
+    ],
+    owner: {
+      name: 'Test User',
+      email: 'test@test.com',
+      createdAt: '2024-01-01T00:00:00.000Z',
+      updatedAt: '2024-01-01T00:00:00.000Z'
+    },
+    price: 1203
+  },
+  name: 'Флюоресцентный бургер'
+};

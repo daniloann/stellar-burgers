@@ -33,7 +33,7 @@ const AppContent = () => {
 
   useEffect(() => {
     dispatch(fetchIngredients());
-    dispatch(getUser());
+    dispatch(getUser()); // Важно для авторизации
   }, [dispatch]);
 
   return (

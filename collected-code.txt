@@ -77,7 +77,7 @@ const AppContent = () => {
 
   useEffect(() => {
     dispatch(fetchIngredients());
-    dispatch(getUser());
+    dispatch(getUser()); // Р’Р°Р¶РЅРѕ РґР»СЏ Р°РІС‚РѕСЂРёР·Р°С†РёРё
   }, [dispatch]);
 
   return (
@@ -208,7 +208,6 @@ const App = () => (
 );
 
 export default App;
-
 ================================================================================
 ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\components\app-header\app-header.tsx
 ================================================================================
@@ -229,8 +228,7 @@ export { AppHeader } from './app-header';
 ================================================================================
 ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\components\burger-constructor\burger-constructor.tsx
 ================================================================================
-import { FC, useMemo } from 'react';
-import { TConstructorIngredient } from '@utils-types';
+import { FC } from 'react';
 import { BurgerConstructorUI } from '@ui';
 import { useDispatch, useSelector } from '../../services/store';
 import { clearConstructor } from '../../services/slices/constructorSlice';
@@ -239,13 +237,18 @@ import {
   closeOrderModal
 } from '../../services/slices/ordersSlice';
 import { useNavigate } from 'react-router-dom';
+import { useMemo } from 'react';
+import { TConstructorIngredient } from '@utils-types';
 
 export const BurgerConstructor: FC = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-
-  const { bun, ingredients } = useSelector((state) => state.burgerConstructor);
-  const { orderRequest, orderModalData } = useSelector((state) => state.orders);
+  const { bun, ingredients } = useSelector(
+    (state) => state.burgerConstructor
+  );
+  const { orderRequest, orderModalData } = useSelector(
+    (state) => state.orders
+  );
   const { user } = useSelector((state) => state.user);
 
   const constructorItems = {
@@ -255,18 +258,17 @@ export const BurgerConstructor: FC = () => {
 
   const onOrderClick = () => {
     if (!constructorItems.bun || orderRequest) return;
-
     if (!user) {
       navigate('/login');
       return;
     }
-
+    
     const ingredientsIds = [
       constructorItems.bun._id,
       ...constructorItems.ingredients.map((item) => item._id),
       constructorItems.bun._id
     ];
-
+    
     dispatch(createOrder(ingredientsIds))
       .unwrap()
       .then(() => {
@@ -302,12 +304,10 @@ export const BurgerConstructor: FC = () => {
     />
   );
 };
-
 ================================================================================
 ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\components\burger-constructor\index.ts
 ================================================================================
 export { BurgerConstructor } from './burger-constructor';
-
 ================================================================================
 ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\components\burger-constructor-element\burger-constructor-element.tsx
 ================================================================================
@@ -322,7 +322,7 @@ import {
 } from '../../services/slices/constructorSlice';
 
 export const BurgerConstructorElement: FC<BurgerConstructorElementProps> = memo(
-  ({ ingredient, index, totalItems }) => {
+  ({ ingredient, index, totalItems, testId }) => {
     const dispatch = useDispatch();
 
     const handleMoveDown = () => {
@@ -345,11 +345,11 @@ export const BurgerConstructorElement: FC<BurgerConstructorElementProps> = memo(
         handleMoveUp={handleMoveUp}
         handleMoveDown={handleMoveDown}
         handleClose={handleClose}
+        testId={testId}
       />
     );
   }
 );
-
 ================================================================================
 ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\components\burger-constructor-element\index.ts
 ================================================================================
@@ -364,8 +364,8 @@ export type BurgerConstructorElementProps = {
   ingredient: TConstructorIngredient;
   index: number;
   totalItems: number;
+  testId?: string;
 };
-
 ================================================================================
 ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\components\burger-ingredient\burger-ingredient.tsx
 ================================================================================
@@ -377,7 +377,7 @@ import { useDispatch } from '../../services/store';
 import { addIngredient } from '../../services/slices/constructorSlice';
 
 export const BurgerIngredient: FC<TBurgerIngredientProps> = memo(
-  ({ ingredient, count }) => {
+  ({ ingredient, count, testId }) => {
     const location = useLocation();
     const dispatch = useDispatch();
 
@@ -391,11 +391,11 @@ export const BurgerIngredient: FC<TBurgerIngredientProps> = memo(
         count={count}
         locationState={{ background: location }}
         handleAdd={handleAdd}
+        testId={testId}
       />
     );
   }
-);
-
+); 
 ================================================================================
 ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\components\burger-ingredient\index.ts
 ================================================================================
@@ -409,8 +409,8 @@ import { TIngredient } from '@utils-types';
 export type TBurgerIngredientProps = {
   ingredient: TIngredient;
   count: number;
+  testId?: string;
 };
-
 ================================================================================
 ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\components\burger-ingredients\burger-ingredients.tsx
 ================================================================================
@@ -744,7 +744,10 @@ import { Preloader } from '../ui/preloader';
 import { OrderInfoUI } from '../ui/order-info';
 import { TIngredient } from '@utils-types';
 import { useDispatch, useSelector } from '../../services/store';
-import { fetchOrderByNumber, clearCurrentOrder } from '../../services/slices/feedSlice';
+import {
+  fetchOrderByNumber,
+  clearCurrentOrder
+} from '../../services/slices/feedSlice';
 
 type TIngredientsWithCount = {
   [key: string]: TIngredient & { count: number };
@@ -753,21 +756,21 @@ type TIngredientsWithCount = {
 export const OrderInfo: FC = () => {
   const { number } = useParams<{ number: string }>();
   const dispatch = useDispatch();
-  
+
   // РџРѕР»СѓС‡Р°РµРј РґР°РЅРЅС‹Рµ РёР· СЃС‚РѕСЂР° С‡РµСЂРµР· СЃРµР»РµРєС‚РѕСЂС‹
-  const { currentOrder: orderData, currentOrderLoading: loading, data: ingredients } = 
-    useSelector((state) => ({
-      currentOrder: state.feed.currentOrder,
-      currentOrderLoading: state.feed.currentOrderLoading,
-      data: state.ingredients.data
-    }));
+  const {
+    currentOrder: orderData,
+    currentOrderLoading: loading
+  } = useSelector((state) => state.feed);
+  
+  const ingredients = useSelector((state) => state.ingredients.data);
 
   useEffect(() => {
     if (number) {
       // Р”РёСЃРїР°С‚С‡РёРј thunk РІРјРµСЃС‚Рѕ РїСЂСЏРјРѕРіРѕ API-Р·Р°РїСЂРѕСЃР°
       dispatch(fetchOrderByNumber(Number(number)));
     }
-    
+
     // РћС‡РёС‰Р°РµРј РґР°РЅРЅС‹Рµ РїСЂРё СЂР°Р·РјРѕРЅС‚РёСЂРѕРІР°РЅРёРё
     return () => {
       dispatch(clearCurrentOrder());
@@ -1185,7 +1188,10 @@ export const BurgerConstructorUI: FC<BurgerConstructorUIProps> = ({
 }) => (
   <section className={styles.burger_constructor}>
     {constructorItems.bun ? (
-      <div className={`${styles.element} mb-4 mr-4`}>
+      <div
+        className={`${styles.element} mb-4 mr-4`}
+        data-testid="bun-top"
+      >
         <ConstructorElement
           type='top'
           isLocked
@@ -1197,11 +1203,13 @@ export const BurgerConstructorUI: FC<BurgerConstructorUIProps> = ({
     ) : (
       <div
         className={`${styles.noBuns} ${styles.noBunsTop} ml-8 mb-4 mr-5 text text_type_main-default`}
+        data-testid="bun-top-empty"
       >
         Р’С‹Р±РµСЂРёС‚Рµ Р±СѓР»РєРё
       </div>
     )}
-    <ul className={styles.elements}>
+
+    <ul className={styles.elements} data-testid="constructor-items">
       {constructorItems.ingredients.length > 0 ? (
         constructorItems.ingredients.map(
           (item: TConstructorIngredient, index: number) => (
@@ -1210,19 +1218,25 @@ export const BurgerConstructorUI: FC<BurgerConstructorUIProps> = ({
               index={index}
               totalItems={constructorItems.ingredients.length}
               key={item.id}
+              testId={`ingredient-${item.id}`}
             />
           )
         )
       ) : (
         <div
           className={`${styles.noBuns} ml-8 mb-4 mr-5 text text_type_main-default`}
+          data-testid="constructor-items-empty"
         >
           Р’С‹Р±РµСЂРёС‚Рµ РЅР°С‡РёРЅРєСѓ
         </div>
       )}
     </ul>
+
     {constructorItems.bun ? (
-      <div className={`${styles.element} mt-4 mr-4`}>
+      <div
+        className={`${styles.element} mt-4 mr-4`}
+        data-testid="bun-bottom"
+      >
         <ConstructorElement
           type='bottom'
           isLocked
@@ -1234,10 +1248,12 @@ export const BurgerConstructorUI: FC<BurgerConstructorUIProps> = ({
     ) : (
       <div
         className={`${styles.noBuns} ${styles.noBunsBottom} ml-8 mb-4 mr-5 text text_type_main-default`}
+        data-testid="bun-bottom-empty"
       >
         Р’С‹Р±РµСЂРёС‚Рµ Р±СѓР»РєРё
       </div>
     )}
+
     <div className={`${styles.total} mt-10 mr-4`}>
       <div className={`${styles.cost} mr-10`}>
         <p className={`text ${styles.text} mr-2`}>{price}</p>
@@ -1249,6 +1265,8 @@ export const BurgerConstructorUI: FC<BurgerConstructorUIProps> = ({
         size='large'
         children='РћС„РѕСЂРјРёС‚СЊ Р·Р°РєР°Р·'
         onClick={onOrderClick}
+        data-testid="order-button"
+        disabled={!constructorItems.bun || constructorItems.ingredients.length === 0}
       />
     </div>
 
@@ -1257,7 +1275,6 @@ export const BurgerConstructorUI: FC<BurgerConstructorUIProps> = ({
         <Preloader />
       </Modal>
     )}
-
     {orderModalData && (
       <Modal
         onClose={closeOrderModal}
@@ -1268,7 +1285,6 @@ export const BurgerConstructorUI: FC<BurgerConstructorUIProps> = ({
     )}
   </section>
 );
-
 ================================================================================
 ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\components\ui\burger-constructor\index.ts
 ================================================================================
@@ -1313,39 +1329,40 @@ export type BurgerConstructorUIProps = {
 ================================================================================
 import React, { FC, memo } from 'react';
 import styles from './burger-constructor-element.module.css';
-import { ConstructorElement } from '@zlden/react-developer-burger-ui-components';
+import { ConstructorElement, MoveButton } from '@zlden/react-developer-burger-ui-components';
 import { BurgerConstructorElementUIProps } from './type';
-import { MoveButton } from '@zlden/react-developer-burger-ui-components';
 
-export const BurgerConstructorElementUI: FC<BurgerConstructorElementUIProps> =
-  memo(
-    ({
-      ingredient,
-      index,
-      totalItems,
-      handleMoveUp,
-      handleMoveDown,
-      handleClose
-    }) => (
-      <li className={`${styles.element} mb-4 mr-2`}>
-        <MoveButton
-          handleMoveDown={handleMoveDown}
-          handleMoveUp={handleMoveUp}
-          isUpDisabled={index === 0}
-          isDownDisabled={index === totalItems - 1}
+export const BurgerConstructorElementUI: FC<BurgerConstructorElementUIProps> = memo(
+  ({
+    ingredient,
+    index,
+    totalItems,
+    handleMoveUp,
+    handleMoveDown,
+    handleClose,
+    testId
+  }) => (
+    <li
+      className={`${styles.element} mb-4 mr-2`}
+      data-testid={testId}
+    >
+      <MoveButton
+        handleMoveDown={handleMoveDown}
+        handleMoveUp={handleMoveUp}
+        isUpDisabled={index === 0}
+        isDownDisabled={index === totalItems - 1}
+      />
+      <div className={`${styles.element_fullwidth} ml-2`}>
+        <ConstructorElement
+          text={ingredient.name}
+          price={ingredient.price}
+          thumbnail={ingredient.image}
+          handleClose={handleClose}
         />
-        <div className={`${styles.element_fullwidth} ml-2`}>
-          <ConstructorElement
-            text={ingredient.name}
-            price={ingredient.price}
-            thumbnail={ingredient.image}
-            handleClose={handleClose}
-          />
-        </div>
-      </li>
-    )
-  );
-
+      </div>
+    </li>
+  )
+);
 ================================================================================
 ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\components\ui\burger-constructor-element\index.ts
 ================================================================================
@@ -1363,8 +1380,8 @@ export type BurgerConstructorElementUIProps = {
   handleMoveUp: () => void;
   handleMoveDown: () => void;
   handleClose: () => void;
+  testId?: string;
 };
-
 ================================================================================
 ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\components\ui\burger-ingredient\burger-ingredient.module.css
 ================================================================================
@@ -1405,25 +1422,23 @@ export type BurgerConstructorElementUIProps = {
 import React, { FC, memo } from 'react';
 import { Link } from 'react-router-dom';
 import styles from './burger-ingredient.module.css';
-
 import {
   Counter,
   CurrencyIcon,
   AddButton
 } from '@zlden/react-developer-burger-ui-components';
-
 import { TBurgerIngredientUIProps } from './type';
 
 export const BurgerIngredientUI: FC<TBurgerIngredientUIProps> = memo(
-  ({ ingredient, count, handleAdd, locationState }) => {
+  ({ ingredient, count, handleAdd, locationState, testId }) => {
     const { image, price, name, _id } = ingredient;
-
     return (
-      <li className={styles.container}>
+      <li className={styles.container} data-testid={testId}>
         <Link
           className={styles.article}
           to={`/ingredients/${_id}`}
           state={locationState}
+          data-testid={`link-${_id}`}
         >
           {count && <Counter count={count} />}
           <img className={styles.img} src={image} alt='РєР°СЂС‚РёРЅРєР° РёРЅРіСЂРµРґРёРµРЅС‚Р°.' />
@@ -1442,7 +1457,6 @@ export const BurgerIngredientUI: FC<TBurgerIngredientUIProps> = memo(
     );
   }
 );
-
 ================================================================================
 ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\components\ui\burger-ingredient\index.ts
 ================================================================================
@@ -1459,8 +1473,8 @@ export type TBurgerIngredientUIProps = {
   count: number;
   locationState: { background: Location };
   handleAdd: () => void;
+  testId?: string;
 };
-
 ================================================================================
 ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\components\ui\burger-ingredients\burger-ingredients.module.css
 ================================================================================
@@ -1525,7 +1539,7 @@ export const BurgerIngredientsUI: FC<BurgerIngredientsUIProps> = memo(
     onTabClick
   }) => (
     <>
-      <section className={styles.burger_ingredients}>
+      <section className={styles.burger_ingredients} data-testid="burger-ingredients">
         <nav>
           <ul className={styles.menu}>
             <Tab value='bun' active={currentTab === 'bun'} onClick={onTabClick}>
@@ -1553,25 +1567,27 @@ export const BurgerIngredientsUI: FC<BurgerIngredientsUIProps> = memo(
             titleRef={titleBunRef}
             ingredients={buns}
             ref={bunsRef}
+            data-testid="ingredients-category-bun"
           />
           <IngredientsCategory
             title='РќР°С‡РёРЅРєРё'
             titleRef={titleMainRef}
             ingredients={mains}
             ref={mainsRef}
+            data-testid="ingredients-category-main"
           />
           <IngredientsCategory
             title='РЎРѕСѓСЃС‹'
             titleRef={titleSaucesRef}
             ingredients={sauces}
             ref={saucesRef}
+            data-testid="ingredients-category-sauce"
           />
         </div>
       </section>
     </>
   )
 );
-
 ================================================================================
 ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\components\ui\burger-ingredients\index.ts
 ================================================================================
@@ -1833,18 +1849,22 @@ export const IngredientsCategoryUI = forwardRef<
     <h3 className='text text_type_main-medium mt-10 mb-6' ref={titleRef}>
       {title}
     </h3>
-    <ul className={styles.items} ref={ref}>
+    <ul
+      className={styles.items}
+      ref={ref}
+      data-testid={`ingredients-list-${title.toLowerCase()}`}
+    >
       {ingredients.map((ingredient) => (
         <BurgerIngredient
           ingredient={ingredient}
           key={ingredient._id}
           count={ingredientsCounters[ingredient._id]}
+          testId={`ingredient-${ingredient._id}`}
         />
       ))}
     </ul>
   </>
 ));
-
 ================================================================================
 ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\components\ui\ingredients-category\type.ts
 ================================================================================
@@ -1914,9 +1934,7 @@ export { ModalUI } from './modal';
 ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\components\ui\modal\modal.tsx
 ================================================================================
 import { FC, memo } from 'react';
-
 import styles from './modal.module.css';
-
 import { CloseIcon } from '@zlden/react-developer-burger-ui-components';
 import { TModalUIProps } from './type';
 import { ModalOverlayUI } from '@ui';
@@ -1924,13 +1942,18 @@ import { ModalOverlayUI } from '@ui';
 export const ModalUI: FC<TModalUIProps> = memo(
   ({ title, onClose, children }) => (
     <>
-      <div className={styles.modal}>
+      <div className={styles.modal} data-testid="modal">
         <div className={styles.header}>
           <h3 className={`${styles.title} text text_type_main-large`}>
             {title}
           </h3>
-          <button className={styles.button} type='button'>
-            <CloseIcon type='primary' onClick={onClose} />
+          <button
+            className={styles.button}
+            type='button'
+            onClick={onClose}
+            data-testid="close-modal-button"
+          >
+            <CloseIcon type='primary' />
           </button>
         </div>
         <div className={styles.content}>{children}</div>
@@ -1939,7 +1962,6 @@ export const ModalUI: FC<TModalUIProps> = memo(
     </>
   )
 );
-
 ================================================================================
 ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\components\ui\modal\type.ts
 ================================================================================
@@ -1975,9 +1997,12 @@ export { ModalOverlayUI } from './modal-overlay';
 import styles from './modal-overlay.module.css';
 
 export const ModalOverlayUI = ({ onClick }: { onClick: () => void }) => (
-  <div className={styles.overlay} onClick={onClick} />
+  <div 
+    className={styles.overlay} 
+    onClick={onClick} 
+    data-testid="modal-overlay" 
+  />
 );
-
 ================================================================================
 ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\components\ui\order-card\index.ts
 ================================================================================
@@ -2198,7 +2223,10 @@ export const OrderDetailsUI: React.FC<OrderDetailsUIProps> = ({
   orderNumber
 }) => (
   <>
-    <h2 className={`${styles.title} text text_type_digits-large mt-2 mb-4`}>
+    <h2
+      className={`${styles.title} text text_type_digits-large mt-2 mb-4`}
+      data-testid="order-number"
+    >
       {orderNumber}
     </h2>
     <p className='text text_type_main-medium'>РёРґРµРЅС‚РёС„РёРєР°С‚РѕСЂ Р·Р°РєР°Р·Р°</p>
@@ -2215,7 +2243,6 @@ export const OrderDetailsUI: React.FC<OrderDetailsUIProps> = ({
     </p>
   </>
 );
-
 ================================================================================
 ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\components\ui\order-details\type.ts
 ================================================================================
@@ -3808,6 +3835,442 @@ export * from './register';
 export * from './reset-password';
 
 ================================================================================
+ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\services\slices\__tests__\constructorSlice.test.ts
+================================================================================
+import constructorReducer, {
+  addIngredient,
+  removeIngredient,
+  moveIngredientUp,
+  moveIngredientDown,
+  clearConstructor
+} from '../constructorSlice';
+import { TIngredient } from '../../../utils/types';
+
+const mockIngredient: TIngredient = {
+  _id: '1',
+  name: 'Test Ingredient',
+  type: 'main',
+  proteins: 10,
+  fat: 5,
+  carbohydrates: 15,
+  calories: 100,
+  price: 50,
+  image: 'test.jpg',
+  image_large: 'test-large.jpg',
+  image_mobile: 'test-mobile.jpg'
+};
+
+const mockBun: TIngredient = {
+  ...mockIngredient,
+  _id: '2',
+  name: 'Test Bun',
+  type: 'bun'
+};
+
+describe('constructorSlice', () => {
+  const initialState = {
+    bun: null,
+    ingredients: []
+  };
+
+  test('should return initial state', () => {
+    expect(constructorReducer(undefined, { type: 'unknown' })).toEqual(
+      initialState
+    );
+  });
+
+  test('should add ingredient', () => {
+    const action = addIngredient(mockIngredient);
+    const state = constructorReducer(initialState, action);
+    expect(state.ingredients).toHaveLength(1);
+    expect(state.ingredients[0].name).toBe('Test Ingredient');
+    expect(state.ingredients[0].id).toBeDefined();
+  });
+
+  test('should add bun', () => {
+    const action = addIngredient(mockBun);
+    const state = constructorReducer(initialState, action);
+    expect(state.bun).not.toBeNull();
+    expect(state.bun?.name).toBe('Test Bun');
+    expect(state.bun?.id).toBeDefined();
+  });
+
+  test('should remove ingredient', () => {
+    const addAction = addIngredient(mockIngredient);
+    let state = constructorReducer(initialState, addAction);
+    const ingredientId = state.ingredients[0].id;
+
+    const removeAction = removeIngredient(ingredientId);
+    state = constructorReducer(state, removeAction);
+    expect(state.ingredients).toHaveLength(0);
+  });
+
+  test('should move ingredient up', () => {
+    const addAction1 = addIngredient(mockIngredient);
+    let state = constructorReducer(initialState, addAction1);
+
+    const ingredient2 = { ...mockIngredient, _id: '3', name: 'Ingredient 2' };
+    const addAction2 = addIngredient(ingredient2);
+    state = constructorReducer(state, addAction2);
+
+    expect(state.ingredients[0].name).toBe('Test Ingredient');
+    expect(state.ingredients[1].name).toBe('Ingredient 2');
+
+    state = constructorReducer(state, moveIngredientUp(1));
+    expect(state.ingredients[0].name).toBe('Ingredient 2');
+    expect(state.ingredients[1].name).toBe('Test Ingredient');
+  });
+
+  test('should move ingredient down', () => {
+    const addAction1 = addIngredient(mockIngredient);
+    let state = constructorReducer(initialState, addAction1);
+
+    const ingredient2 = { ...mockIngredient, _id: '3', name: 'Ingredient 2' };
+    const addAction2 = addIngredient(ingredient2);
+    state = constructorReducer(state, addAction2);
+
+    expect(state.ingredients[0].name).toBe('Test Ingredient');
+    expect(state.ingredients[1].name).toBe('Ingredient 2');
+
+    state = constructorReducer(state, moveIngredientDown(0));
+    expect(state.ingredients[0].name).toBe('Ingredient 2');
+    expect(state.ingredients[1].name).toBe('Test Ingredient');
+  });
+
+  test('should clear constructor', () => {
+    const addAction1 = addIngredient(mockIngredient);
+    let state = constructorReducer(initialState, addAction1);
+    const addAction2 = addIngredient(mockBun);
+    state = constructorReducer(state, addAction2);
+
+    expect(state.ingredients).toHaveLength(1);
+    expect(state.bun).not.toBeNull();
+
+    state = constructorReducer(state, clearConstructor());
+    expect(state.ingredients).toHaveLength(0);
+    expect(state.bun).toBeNull();
+  });
+});
+
+================================================================================
+ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\services\slices\__tests__\feedSlice.test.ts
+================================================================================
+import feedReducer, {
+  fetchFeeds,
+  fetchUserOrders,
+  fetchOrderByNumber,
+  clearCurrentOrder
+} from '../feedSlice';
+import { TOrder } from '../../../utils/types';
+
+const mockOrder: TOrder = {
+  _id: '1',
+  status: 'done',
+  name: 'Test Order',
+  createdAt: '2024-01-01',
+  updatedAt: '2024-01-01',
+  number: 123,
+  ingredients: ['1', '2']
+};
+
+describe('feedSlice', () => {
+  const initialState = {
+    publicOrders: [],
+    userOrders: [],
+    total: 0,
+    totalToday: 0,
+    loading: false,
+    userOrdersLoading: false,
+    currentOrder: null,
+    currentOrderLoading: false,
+    error: null
+  };
+
+  test('should return initial state', () => {
+    expect(feedReducer(undefined, { type: 'unknown' })).toEqual(initialState);
+  });
+
+  test('should handle fetchFeeds.pending', () => {
+    const action = { type: fetchFeeds.pending.type };
+    const state = feedReducer(initialState, action);
+    expect(state.loading).toBe(true);
+    expect(state.error).toBeNull();
+  });
+
+  test('should handle fetchFeeds.fulfilled', () => {
+    const action = {
+      type: fetchFeeds.fulfilled.type,
+      payload: { orders: [mockOrder], total: 10, totalToday: 2 }
+    };
+    const state = feedReducer(initialState, action);
+    expect(state.loading).toBe(false);
+    expect(state.publicOrders).toEqual([mockOrder]);
+    expect(state.total).toBe(10);
+    expect(state.totalToday).toBe(2);
+  });
+
+  test('should handle fetchUserOrders.fulfilled', () => {
+    const action = {
+      type: fetchUserOrders.fulfilled.type,
+      payload: [mockOrder]
+    };
+    const state = feedReducer(initialState, action);
+    expect(state.userOrdersLoading).toBe(false);
+    expect(state.userOrders).toEqual([mockOrder]);
+  });
+
+  test('should handle fetchOrderByNumber.pending', () => {
+    const action = { type: fetchOrderByNumber.pending.type };
+    const state = feedReducer(initialState, action);
+    expect(state.currentOrderLoading).toBe(true);
+    expect(state.currentOrder).toBeNull();
+  });
+
+  test('should handle fetchOrderByNumber.fulfilled', () => {
+    const action = {
+      type: fetchOrderByNumber.fulfilled.type,
+      payload: mockOrder
+    };
+    const state = feedReducer(initialState, action);
+    expect(state.currentOrderLoading).toBe(false);
+    expect(state.currentOrder).toEqual(mockOrder);
+  });
+
+  test('should handle clearCurrentOrder', () => {
+    const stateWithOrder = {
+      ...initialState,
+      currentOrder: mockOrder,
+      currentOrderLoading: true
+    };
+    const state = feedReducer(stateWithOrder, clearCurrentOrder());
+    expect(state.currentOrder).toBeNull();
+    expect(state.currentOrderLoading).toBe(false);
+  });
+});
+
+================================================================================
+ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\services\slices\__tests__\ingredientsSlice.test.ts
+================================================================================
+import ingredientsReducer, { fetchIngredients } from '../ingredientsSlice';
+import { TIngredient } from '../../../utils/types';
+
+const mockIngredients: TIngredient[] = [
+  {
+    _id: '1',
+    name: 'Ingredient 1',
+    type: 'main',
+    proteins: 10,
+    fat: 5,
+    carbohydrates: 15,
+    calories: 100,
+    price: 50,
+    image: 'test.jpg',
+    image_large: 'test-large.jpg',
+    image_mobile: 'test-mobile.jpg'
+  }
+];
+
+describe('ingredientsSlice', () => {
+  const initialState = {
+    data: [],
+    loading: false,
+    error: null
+  };
+
+  test('should return initial state', () => {
+    expect(ingredientsReducer(undefined, { type: 'unknown' })).toEqual(
+      initialState
+    );
+  });
+
+  test('should handle fetchIngredients.pending', () => {
+    const action = { type: fetchIngredients.pending.type };
+    const state = ingredientsReducer(initialState, action);
+    expect(state.loading).toBe(true);
+    expect(state.error).toBeNull();
+  });
+
+  test('should handle fetchIngredients.fulfilled', () => {
+    const action = {
+      type: fetchIngredients.fulfilled.type,
+      payload: mockIngredients
+    };
+    const state = ingredientsReducer(initialState, action);
+    expect(state.loading).toBe(false);
+    expect(state.data).toEqual(mockIngredients);
+  });
+
+  test('should handle fetchIngredients.rejected', () => {
+    const action = {
+      type: fetchIngredients.rejected.type,
+      error: { message: 'Failed to fetch' }
+    };
+    const state = ingredientsReducer(initialState, action);
+    expect(state.loading).toBe(false);
+    expect(state.error).toBe('Failed to fetch');
+  });
+});
+
+================================================================================
+ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\services\slices\__tests__\ordersSlice.test.ts
+================================================================================
+import ordersReducer, { createOrder, closeOrderModal } from '../ordersSlice';
+import { TOrder } from '../../../utils/types';
+
+const mockOrder: TOrder = {
+  _id: '1',
+  status: 'done',
+  name: 'Test Order',
+  createdAt: '2024-01-01',
+  updatedAt: '2024-01-01',
+  number: 123,
+  ingredients: ['1', '2']
+};
+
+describe('ordersSlice', () => {
+  const initialState = {
+    orderRequest: false,
+    orderModalData: null,
+    error: null
+  };
+
+  test('should return initial state', () => {
+    expect(ordersReducer(undefined, { type: 'unknown' })).toEqual(initialState);
+  });
+
+  test('should handle createOrder.pending', () => {
+    const action = { type: createOrder.pending.type };
+    const state = ordersReducer(initialState, action);
+    expect(state.orderRequest).toBe(true);
+    expect(state.error).toBeNull();
+  });
+
+  test('should handle createOrder.fulfilled', () => {
+    const action = { type: createOrder.fulfilled.type, payload: mockOrder };
+    const state = ordersReducer(initialState, action);
+    expect(state.orderRequest).toBe(false);
+    expect(state.orderModalData).toEqual(mockOrder);
+  });
+
+  test('should handle createOrder.rejected', () => {
+    const action = {
+      type: createOrder.rejected.type,
+      error: { message: 'Failed to create order' }
+    };
+    const state = ordersReducer(initialState, action);
+    expect(state.orderRequest).toBe(false);
+    expect(state.error).toBe('Failed to create order');
+  });
+
+  test('should handle closeOrderModal', () => {
+    const stateWithOrder = { ...initialState, orderModalData: mockOrder };
+    const state = ordersReducer(stateWithOrder, closeOrderModal());
+    expect(state.orderModalData).toBeNull();
+  });
+});
+
+================================================================================
+ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\services\slices\__tests__\userSlice.test.ts
+================================================================================
+import userReducer, {
+  loginUser,
+  registerUser,
+  getUser,
+  updateUser,
+  logout,
+  setAuthChecked
+} from '../userSlice';
+import { TUser } from '../../../utils/types';
+
+const mockUser: TUser = {
+  email: 'test@test.com',
+  name: 'Test User'
+};
+
+describe('userSlice', () => {
+  const initialState = {
+    user: null,
+    isAuthChecked: false,
+    loginUserRequest: false,
+    registerUserRequest: false,
+    updateUserRequest: false,
+    error: null
+  };
+
+  test('should return initial state', () => {
+    expect(userReducer(undefined, { type: 'unknown' })).toEqual(initialState);
+  });
+
+  test('should handle setAuthChecked', () => {
+    const state = userReducer(initialState, setAuthChecked(true));
+    expect(state.isAuthChecked).toBe(true);
+  });
+
+  test('should handle loginUser.pending', () => {
+    const action = { type: loginUser.pending.type };
+    const state = userReducer(initialState, action);
+    expect(state.loginUserRequest).toBe(true);
+    expect(state.error).toBeNull();
+  });
+
+  test('should handle loginUser.fulfilled', () => {
+    const action = { type: loginUser.fulfilled.type, payload: mockUser };
+    const state = userReducer(initialState, action);
+    expect(state.loginUserRequest).toBe(false);
+    expect(state.user).toEqual(mockUser);
+    expect(state.isAuthChecked).toBe(true);
+  });
+
+  test('should handle loginUser.rejected', () => {
+    const action = {
+      type: loginUser.rejected.type,
+      error: { message: 'Login failed' }
+    };
+    const state = userReducer(initialState, action);
+    expect(state.loginUserRequest).toBe(false);
+    expect(state.error).toBe('Login failed');
+  });
+
+  test('should handle registerUser.fulfilled', () => {
+    const action = { type: registerUser.fulfilled.type, payload: mockUser };
+    const state = userReducer(initialState, action);
+    expect(state.registerUserRequest).toBe(false);
+    expect(state.user).toEqual(mockUser);
+    expect(state.isAuthChecked).toBe(true);
+  });
+
+  test('should handle getUser.fulfilled', () => {
+    const action = { type: getUser.fulfilled.type, payload: mockUser };
+    const state = userReducer(initialState, action);
+    expect(state.user).toEqual(mockUser);
+    expect(state.isAuthChecked).toBe(true);
+  });
+
+  test('should handle getUser.rejected', () => {
+    const action = { type: getUser.rejected.type };
+    const state = userReducer(initialState, action);
+    expect(state.user).toBeNull();
+    expect(state.isAuthChecked).toBe(true);
+  });
+
+  test('should handle updateUser.fulfilled', () => {
+    const updatedUser = { ...mockUser, name: 'Updated Name' };
+    const action = { type: updateUser.fulfilled.type, payload: updatedUser };
+    const state = userReducer(initialState, action);
+    expect(state.updateUserRequest).toBe(false);
+    expect(state.user).toEqual(updatedUser);
+  });
+
+  test('should handle logout.fulfilled', () => {
+    const stateWithUser = { ...initialState, user: mockUser };
+    const action = { type: logout.fulfilled.type };
+    const state = userReducer(stateWithUser, action);
+    expect(state.user).toBeNull();
+    expect(state.isAuthChecked).toBe(true);
+  });
+});
+
+================================================================================
 ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\services\slices\constructorSlice.ts
 ================================================================================
 import { createSlice, PayloadAction, nanoid } from '@reduxjs/toolkit';
@@ -3882,7 +4345,11 @@ export default constructorSlice.reducer;
 ================================================================================
 // src/services/slices/feedSlice.ts
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import { getFeedsApi, getOrdersApi, getOrderByNumberApi } from '../../utils/burger-api';
+import {
+  getFeedsApi,
+  getOrdersApi,
+  getOrderByNumberApi
+} from '../../utils/burger-api';
 import { TOrder } from '../../utils/types';
 
 interface FeedState {
@@ -3892,8 +4359,8 @@ interface FeedState {
   totalToday: number;
   loading: boolean;
   userOrdersLoading: boolean;
-  currentOrder: TOrder | null; // Р”РѕР±Р°РІР»СЏРµРј РїРѕР»Рµ РґР»СЏ С‚РµРєСѓС‰РµРіРѕ Р·Р°РєР°Р·Р°
-  currentOrderLoading: boolean; // Р”РѕР±Р°РІР»СЏРµРј РїРѕР»Рµ РґР»СЏ СЃС‚Р°С‚СѓСЃР° Р·Р°РіСЂСѓР·РєРё
+  currentOrder: TOrder | null; // РџРѕР»Рµ РґР»СЏ С‚РµРєСѓС‰РµРіРѕ Р·Р°РєР°Р·Р°
+  currentOrderLoading: boolean; // РџРѕР»Рµ РґР»СЏ СЃС‚Р°С‚СѓСЃР° Р·Р°РіСЂСѓР·РєРё
   error: string | null;
 }
 
@@ -4969,7 +5436,7 @@ type TOrderResponse = TServerResponse<{
   orders: TOrder[];
 }>;
 
-export const getOrderByNumberApi = (number: number) =>
+export const getOrderByNumberApi = (number: number): Promise<TOrderResponse> =>
   fetch(`${URL}/orders/${number}`, {
     method: 'GET',
     headers: {
@@ -5079,7 +5546,6 @@ export const logoutApi = () =>
       token: localStorage.getItem('refreshToken')
     })
   }).then((res) => checkResponse<TServerResponse<{}>>(res));
-
 ================================================================================
 ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\utils\cookie.ts
 ================================================================================
@@ -5134,7 +5600,7 @@ export function deleteCookie(name: string) {
 ================================================================================
 ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\utils\mock-data.ts
 ================================================================================
-import { TIngredient } from './types';
+import { TIngredient, TOrder } from './types';
 
 export const mockIngredients: TIngredient[] = [
   {
@@ -5199,10 +5665,8 @@ export const mockIngredients: TIngredient[] = [
     calories: 986,
     price: 300,
     image: 'https://code.s3.yandex.net/react/code/mineral_rings.png',
-    image_large:
-      'https://code.s3.yandex.net/react/code/mineral_rings-large.png',
-    image_mobile:
-      'https://code.s3.yandex.net/react/code/mineral_rings-mobile.png'
+    image_large: 'https://code.s3.yandex.net/react/code/mineral_rings-large.png',
+    image_mobile: 'https://code.s3.yandex.net/react/code/mineral_rings-mobile.png'
   },
   {
     _id: '60d3b41abdacab0026a733cc',
@@ -5271,6 +5735,63 @@ export const mockIngredients: TIngredient[] = [
   }
 ];
 
+// РњРѕРєРѕРІС‹Рµ РґР°РЅРЅС‹Рµ РґР»СЏ Р·Р°РєР°Р·РѕРІ
+export const mockOrder: TOrder = {
+  _id: '66a8e6d5f3b4c5d6e7f8g9h0',
+  status: 'done',
+  name: 'Р¤Р»СЋРѕСЂРµСЃС†РµРЅС‚РЅС‹Р№ Р±СѓСЂРіРµСЂ',
+  createdAt: '2024-01-25T10:00:00.000Z',
+  updatedAt: '2024-01-25T10:05:00.000Z',
+  number: 12345,
+  ingredients: [
+    '60d3b41abdacab0026a733c6', // Р±СѓР»РєР°
+    '60d3b41abdacab0026a733c8', // РЅР°С‡РёРЅРєР°
+    '60d3b41abdacab0026a733ca'  // СЃРѕСѓСЃ
+  ]
+};
+
+export const mockOrders: TOrder[] = [
+  mockOrder,
+  {
+    _id: '66a8e6d5f3b4c5d6e7f8g9h1',
+    status: 'pending',
+    name: 'Р‘РµСЃСЃРјРµСЂС‚РЅС‹Р№ Р±СѓСЂРіРµСЂ',
+    createdAt: '2024-01-25T09:00:00.000Z',
+    updatedAt: '2024-01-25T09:02:00.000Z',
+    number: 12344,
+    ingredients: [
+      '60d3b41abdacab0026a733d0', // РґСЂСѓРіР°СЏ Р±СѓР»РєР°
+      '60d3b41abdacab0026a733c9', // РґСЂСѓРіР°СЏ РЅР°С‡РёРЅРєР°
+      '60d3b41abdacab0026a733cc'  // РґСЂСѓРіРѕР№ СЃРѕСѓСЃ
+    ]
+  }
+];
+
+// РњРѕРєРѕРІС‹Р№ РѕС‚РІРµС‚ РґР»СЏ СЃРѕР·РґР°РЅРёСЏ Р·Р°РєР°Р·Р°
+export const mockOrderResponse = {
+  success: true,
+  order: {
+    _id: '66a8e6d5f3b4c5d6e7f8g9h0',
+    status: 'done',
+    name: 'Р¤Р»СЋРѕСЂРµСЃС†РµРЅС‚РЅС‹Р№ Р±СѓСЂРіРµСЂ',
+    createdAt: '2024-01-25T10:00:00.000Z',
+    updatedAt: '2024-01-25T10:05:00.000Z',
+    number: 12345,
+    ingredients: [
+      '60d3b41abdacab0026a733c6',
+      '60d3b41abdacab0026a733c8',
+      '60d3b41abdacab0026a733ca'
+    ],
+    owner: {
+      name: 'Test User',
+      email: 'test@test.com',
+      createdAt: '2024-01-01T00:00:00.000Z',
+      updatedAt: '2024-01-01T00:00:00.000Z'
+    },
+    price: 1203
+  },
+  name: 'Р¤Р»СЋРѕСЂРµСЃС†РµРЅС‚РЅС‹Р№ Р±СѓСЂРіРµСЂ'
+};
 ================================================================================
 ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\utils\types.ts
 ================================================================================
@@ -5316,6 +5837,10 @@ export type TUser = {
 export type TTabMode = 'bun' | 'sauce' | 'main';
 
 ================================================================================
+ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\__mocks__\fileMock.js
+================================================================================
+module.exports = 'test-file-stub';
+================================================================================
 ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\global.d.ts
 ================================================================================
 import 'react';
@@ -5357,6 +5882,11 @@ root.render(
     </Provider>
   </React.StrictMode>
 );
+
+================================================================================
+ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\setupTests.ts
+================================================================================
+import '@testing-library/jest-dom';
 
 ================================================================================
 ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\styles.d.ts

@@ -11,8 +11,8 @@ export const IngredientsCategoryUI = forwardRef<
     <h3 className='text text_type_main-medium mt-10 mb-6' ref={titleRef}>
       {title}
     </h3>
-    <ul 
-      className={styles.items} 
+    <ul
+      className={styles.items}
       ref={ref}
       data-testid={`ingredients-list-${title.toLowerCase()}`}
     >
@@ -21,7 +21,7 @@ export const IngredientsCategoryUI = forwardRef<
           ingredient={ingredient}
           key={ingredient._id}
           count={ingredientsCounters[ingredient._id]}
-          data-testid={`ingredient-${ingredient._id}`}
+          testId={`ingredient-${ingredient._id}`}
         />
       ))}
     </ul>
