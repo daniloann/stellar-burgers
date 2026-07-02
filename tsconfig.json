@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "target": "ES2020",
-    "lib": ["DOM", "DOM.Iterable", "ESNext"],
+    "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "skipLibCheck": true,
     "esModuleInterop": true,
@@ -9,26 +9,25 @@
     "strict": true,
     "forceConsistentCasingInFileNames": true,
     "noFallthroughCasesInSwitch": true,
-    "module": "ESNext",
-    "moduleResolution": "node",
+    "module": "esnext",
+    "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": false,
     "jsx": "react-jsx",
-    "baseUrl": ".",
-    "types": ["node", "jest", "@testing-library/jest-dom"],
+    "ignoreDeprecations": "6.0",
+    "baseUrl": "src",
+    "rootDir": ".",  
+    "types": ["node", "jest"],  
     "paths": {
-      "@pages": ["src/pages"],
-      "@components": ["src/components"],
-      "@ui": ["src/components/ui"],
-      "@ui-pages": ["src/components/ui/pages"],
-      "@utils-types": ["src/utils/types"],
-      "@api": ["src/utils/burger-api"],
-      "@slices": ["src/services/slices"]
-    },
-    "outDir": "./dist",
-    "sourceMap": true
+      "@utils-types": ["utils/types"],
+      "@api": ["utils/burger-api"],
+      "@components": ["components"],
+      "@ui": ["components/ui"],
+      "@ui-pages": ["components/ui/pages"],
+      "@pages": ["pages"]
+    }
   },
-  "include": ["src", "tests"],
-  "exclude": ["node_modules", "build", "dist", "coverage"]
+  "include": ["src"],
+  "exclude": ["node_modules", "dist", "build", "coverage"]
 }

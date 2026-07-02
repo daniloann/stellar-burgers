@@ -10,16 +10,14 @@ import ordersReducer from './slices/ordersSlice';
 import userReducer from './slices/userSlice';
 import feedReducer from './slices/feedSlice';
 
-const rootReducer = {
-  ingredients: ingredientsReducer,
-  burgerConstructor: constructorReducer,
-  orders: ordersReducer,
-  user: userReducer,
-  feed: feedReducer
-};
-
 const store = configureStore({
-  reducer: rootReducer,
+  reducer: {
+    ingredients: ingredientsReducer,
+    burgerConstructor: constructorReducer,
+    orders: ordersReducer,
+    user: userReducer,
+    feed: feedReducer
+  },
   devTools: process.env.NODE_ENV !== 'production'
 });
 

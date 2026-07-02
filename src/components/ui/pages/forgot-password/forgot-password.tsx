@@ -1,53 +1,38 @@
-import { FC } from 'react';
-
+import { ChangeEvent, FC, SyntheticEvent } from 'react';
 import { Input, Button } from '@zlden/react-developer-burger-ui-components';
-import styles from '../common.module.css';
-import { Link } from 'react-router-dom';
-import { PageUIProps } from '../common-type';
 
-export const ForgotPasswordUI: FC<PageUIProps> = ({
-  errorText,
+type TForgotPasswordUIProps = {
+  email: string;
+  setEmail: (value: string) => void;
+  handleSubmit: (e: SyntheticEvent) => void;
+  errorText?: string;
+};
+
+export const ForgotPasswordUI: FC<TForgotPasswordUIProps> = ({
   email,
   setEmail,
-  handleSubmit
+  handleSubmit,
+  errorText
 }) => (
-  <main className={styles.container}>
-    <div className={`pt-6 ${styles.wrapCenter}`}>
-      <h3 className='pb-6 text text_type_main-medium'>Восстановление пароля</h3>
-      <form
-        className={`pb-15 ${styles.form}`}
-        name='login'
-        onSubmit={handleSubmit}
-      >
-        <div className='pb-6'>
-          <Input
-            type='email'
-            placeholder='Укажите e-mail'
-            onChange={(e) => setEmail(e.target.value)}
-            value={email}
-            name='email'
-            error={false}
-            errorText=''
-            size='default'
-          />
-        </div>
-        <div className={`pb-6 ${styles.button}`}>
-          <Button type='primary' size='medium' htmlType='submit'>
-            Восстановить
-          </Button>
-        </div>
-        {errorText && (
-          <p className={`${styles.error} text text_type_main-default pb-6`}>
-            {errorText}
-          </p>
-        )}
-      </form>
-      <div className={`${styles.question} text text_type_main-default pb-6`}>
-        Вспомнили пароль?
-        <Link to={'/login'} className={`pl-2 ${styles.link}`}>
-          Войти
-        </Link>
-      </div>
+  <form className='form' onSubmit={handleSubmit}>
+    <div className='mb-6'>
+      <Input
+        type='email'
+        placeholder='Укажите e-mail'
+        onChange={(e: ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
+        value={email}
+        name='email'
+        error={Boolean(errorText)}
+        errorText={errorText || ''}
+        size='default'
+        onPointerEnterCapture={() => {}}
+        onPointerLeaveCapture={() => {}}
+      />
     </div>
-  </main>
+    <div className='button'>
+      <Button htmlType='submit' type='primary' size='medium'>
+        Восстановить
+      </Button>
+    </div>
+  </form>
 );

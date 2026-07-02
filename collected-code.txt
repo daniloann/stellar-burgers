@@ -77,7 +77,7 @@ const AppContent = () => {
 
   useEffect(() => {
     dispatch(fetchIngredients());
-    dispatch(getUser()); // Р’Р°Р¶РЅРѕ РґР»СЏ Р°РІС‚РѕСЂРёР·Р°С†РёРё
+    dispatch(getUser());
   }, [dispatch]);
 
   return (
@@ -619,7 +619,6 @@ export { Modal } from './modal';
 ================================================================================
 import { FC, memo, useEffect } from 'react';
 import ReactDOM from 'react-dom';
-
 import { TModalProps } from './type';
 import { ModalUI } from '@ui';
 
@@ -628,7 +627,7 @@ const modalRoot = document.getElementById('modals');
 export const Modal: FC<TModalProps> = memo(({ title, onClose, children }) => {
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
-      e.key === 'Escape' && onClose();
+      if (e.key === 'Escape') onClose();
     };
 
     document.addEventListener('keydown', handleEsc);
@@ -644,7 +643,6 @@ export const Modal: FC<TModalProps> = memo(({ title, onClose, children }) => {
     modalRoot as HTMLDivElement
   );
 });
-
 ================================================================================
 ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\components\modal\type.ts
 ================================================================================
@@ -680,7 +678,7 @@ export const OrderCard: FC<OrderCardProps> = memo(({ order }) => {
   const orderInfo = useMemo(() => {
     if (!ingredients.length) return null;
 
-    const ingredientsInfo = order.ingredients.reduce(
+    const ingredientsInfo = order.ingredients.reduce<TIngredient[]>(
       (acc: TIngredient[], item: string) => {
         const ingredient = ingredients.find((ing) => ing._id === item);
         if (ingredient) return [...acc, ingredient];
@@ -689,16 +687,19 @@ export const OrderCard: FC<OrderCardProps> = memo(({ order }) => {
       []
     );
 
-    const total = ingredientsInfo.reduce((acc, item) => acc + item.price, 0);
+    const total = ingredientsInfo.reduce<number>(
+      (acc: number, item: TIngredient) => acc + item.price,
+      0
+    );
 
     const ingredientsToShow = ingredientsInfo.slice(0, maxIngredients);
-
     const remains =
       ingredientsInfo.length > maxIngredients
         ? ingredientsInfo.length - maxIngredients
         : 0;
 
     const date = new Date(order.createdAt);
+
     return {
       ...order,
       ingredientsInfo,
@@ -719,7 +720,6 @@ export const OrderCard: FC<OrderCardProps> = memo(({ order }) => {
     />
   );
 });
-
 ================================================================================
 ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\components\order-card\type.ts
 ================================================================================
@@ -955,7 +955,6 @@ export const ProtectedRoute = ({
 
   return children;
 };
-
 ================================================================================
 ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\components\ui\app-header\app-header.module.css
 ================================================================================
@@ -1188,10 +1187,7 @@ export const BurgerConstructorUI: FC<BurgerConstructorUIProps> = ({
 }) => (
   <section className={styles.burger_constructor}>
     {constructorItems.bun ? (
-      <div
-        className={`${styles.element} mb-4 mr-4`}
-        data-testid="bun-top"
-      >
+      <div className={`${styles.element} mb-4 mr-4`} data-testid="bun-top">
         <ConstructorElement
           type='top'
           isLocked
@@ -1205,7 +1201,7 @@ export const BurgerConstructorUI: FC<BurgerConstructorUIProps> = ({
         className={`${styles.noBuns} ${styles.noBunsTop} ml-8 mb-4 mr-5 text text_type_main-default`}
         data-testid="bun-top-empty"
       >
-        Р’С‹Р±РµСЂРёС‚Рµ Р±СѓР»РєРё
+        Р’С‹Р±РµСЂРёС‚Рµ Р±СѓР»РєСѓ
       </div>
     )}
 
@@ -1233,10 +1229,7 @@ export const BurgerConstructorUI: FC<BurgerConstructorUIProps> = ({
     </ul>
 
     {constructorItems.bun ? (
-      <div
-        className={`${styles.element} mt-4 mr-4`}
-        data-testid="bun-bottom"
-      >
+      <div className={`${styles.element} mt-4 mr-4`} data-testid="bun-bottom">
         <ConstructorElement
           type='bottom'
           isLocked
@@ -1250,7 +1243,7 @@ export const BurgerConstructorUI: FC<BurgerConstructorUIProps> = ({
         className={`${styles.noBuns} ${styles.noBunsBottom} ml-8 mb-4 mr-5 text text_type_main-default`}
         data-testid="bun-bottom-empty"
       >
-        Р’С‹Р±РµСЂРёС‚Рµ Р±СѓР»РєРё
+        Р’С‹Р±РµСЂРёС‚Рµ Р±СѓР»РєСѓ
       </div>
     )}
 
@@ -1432,6 +1425,7 @@ import { TBurgerIngredientUIProps } from './type';
 export const BurgerIngredientUI: FC<TBurgerIngredientUIProps> = memo(
   ({ ingredient, count, handleAdd, locationState, testId }) => {
     const { image, price, name, _id } = ingredient;
+
     return (
       <li className={styles.container} data-testid={testId}>
         <Link
@@ -1440,8 +1434,12 @@ export const BurgerIngredientUI: FC<TBurgerIngredientUIProps> = memo(
           state={locationState}
           data-testid={`link-${_id}`}
         >
-          {count && <Counter count={count} />}
-          <img className={styles.img} src={image} alt='РєР°СЂС‚РёРЅРєР° РёРЅРіСЂРµРґРёРµРЅС‚Р°.' />
+          {count ? <Counter count={count} /> : null}
+          <img
+            className={styles.img}
+            src={image}
+            alt='РєР°СЂС‚РёРЅРєР° РёРЅРіСЂРµРґРёРµРЅС‚Р°.'
+          />
           <div className={`${styles.cost} mt-2 mb-2`}>
             <p className='text text_type_digits-default mr-2'>{price}</p>
             <CurrencyIcon type='primary' />
@@ -1788,26 +1786,25 @@ export const IngredientDetailsUI: FC<IngredientDetailsUIProps> = memo(
         <ul className={`${styles.nutritional_values} text_type_main-default`}>
           <li className={styles.nutritional_value}>
             <p className={`text mb-2 ${styles.text}`}>РљР°Р»РѕСЂРёРё, РєРєР°Р»</p>
-            <p className={`text text_type_digits-default`}>{calories}</p>
+            <p className='text text_type_digits-default'>{calories}</p>
           </li>
           <li className={styles.nutritional_value}>
             <p className={`text mb-2 ${styles.text}`}>Р‘РµР»РєРё, Рі</p>
-            <p className={`text text_type_digits-default`}>{proteins}</p>
+            <p className='text text_type_digits-default'>{proteins}</p>
           </li>
           <li className={styles.nutritional_value}>
             <p className={`text mb-2 ${styles.text}`}>Р–РёСЂС‹, Рі</p>
-            <p className={`text text_type_digits-default`}>{fat}</p>
+            <p className='text text_type_digits-default'>{fat}</p>
           </li>
           <li className={styles.nutritional_value}>
             <p className={`text mb-2 ${styles.text}`}>РЈРіР»РµРІРѕРґС‹, Рі</p>
-            <p className={`text text_type_digits-default`}>{carbohydrates}</p>
+            <p className='text text_type_digits-default'>{carbohydrates}</p>
           </li>
         </ul>
       </div>
     );
   }
 );
-
 ================================================================================
 ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\components\ui\ingredient-details\type.ts
 ================================================================================
@@ -1939,29 +1936,25 @@ import { CloseIcon } from '@zlden/react-developer-burger-ui-components';
 import { TModalUIProps } from './type';
 import { ModalOverlayUI } from '@ui';
 
-export const ModalUI: FC<TModalUIProps> = memo(
-  ({ title, onClose, children }) => (
-    <>
-      <div className={styles.modal} data-testid="modal">
-        <div className={styles.header}>
-          <h3 className={`${styles.title} text text_type_main-large`}>
-            {title}
-          </h3>
-          <button
-            className={styles.button}
-            type='button'
-            onClick={onClose}
-            data-testid="close-modal-button"
-          >
-            <CloseIcon type='primary' />
-          </button>
-        </div>
-        <div className={styles.content}>{children}</div>
+export const ModalUI: FC<TModalUIProps> = memo(({ title, onClose, children }) => (
+  <>
+    <div className={styles.modal} data-testid="modal">
+      <div className={styles.header}>
+        <h3 className={`${styles.title} text text_type_main-large`}>{title}</h3>
+        <button
+          className={styles.button}
+          type='button'
+          onClick={onClose}
+          data-testid="close-modal-button"
+        >
+          <CloseIcon type='primary' />
+        </button>
       </div>
-      <ModalOverlayUI onClick={onClose} />
-    </>
-  )
-);
+      <div className={styles.content}>{children}</div>
+    </div>
+    <ModalOverlayUI onClick={onClose} />
+  </>
+));
 ================================================================================
 ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\components\ui\modal\type.ts
 ================================================================================
@@ -2235,7 +2228,7 @@ export const OrderDetailsUI: React.FC<OrderDetailsUIProps> = ({
       src={doneImg}
       alt='РёР·РѕР±СЂР°Р¶РµРЅРёРµ СЃС‚Р°С‚СѓСЃР° Р·Р°РєР°Р·Р°.'
     />
-    <p className='text text_type_main-default mb-1'>
+    <p className='text text_type_main-medium mb-1'>
       Р’Р°С€ Р·Р°РєР°Р· РЅР°С‡Р°Р»Рё РіРѕС‚РѕРІРёС‚СЊ
     </p>
     <p className={`${styles.text} text text_type_main-default`}>
@@ -2512,9 +2505,7 @@ export type OrdersListUIProps = {
 ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\components\ui\pages\constructor-page\constructor-page.tsx
 ================================================================================
 import { FC } from 'react';
-
 import styles from './constructor-page.module.css';
-
 import { ConstructorPageUIProps } from './type';
 import { Preloader } from '@ui';
 import { BurgerIngredients, BurgerConstructor } from '@components';
@@ -2540,7 +2531,6 @@ export const ConstructorPageUI: FC<ConstructorPageUIProps> = ({
     )}
   </>
 );
-
 ================================================================================
 ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\components\ui\pages\constructor-page\index.ts
 ================================================================================
@@ -2643,60 +2633,44 @@ export type FeedUIProps = {
 ================================================================================
 ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\components\ui\pages\forgot-password\forgot-password.tsx
 ================================================================================
-import { FC } from 'react';
-
+import { ChangeEvent, FC, SyntheticEvent } from 'react';
 import { Input, Button } from '@zlden/react-developer-burger-ui-components';
-import styles from '../common.module.css';
-import { Link } from 'react-router-dom';
-import { PageUIProps } from '../common-type';
 
-export const ForgotPasswordUI: FC<PageUIProps> = ({
-  errorText,
+type TForgotPasswordUIProps = {
+  email: string;
+  setEmail: (value: string) => void;
+  handleSubmit: (e: SyntheticEvent) => void;
+  errorText?: string;
+};
+
+export const ForgotPasswordUI: FC<TForgotPasswordUIProps> = ({
   email,
   setEmail,
-  handleSubmit
+  handleSubmit,
+  errorText
 }) => (
-  <main className={styles.container}>
-    <div className={`pt-6 ${styles.wrapCenter}`}>
-      <h3 className='pb-6 text text_type_main-medium'>Р’РѕСЃСЃС‚Р°РЅРѕРІР»РµРЅРёРµ РїР°СЂРѕР»СЏ</h3>
-      <form
-        className={`pb-15 ${styles.form}`}
-        name='login'
-        onSubmit={handleSubmit}
-      >
-        <div className='pb-6'>
-          <Input
-            type='email'
-            placeholder='РЈРєР°Р¶РёС‚Рµ e-mail'
-            onChange={(e) => setEmail(e.target.value)}
-            value={email}
-            name='email'
-            error={false}
-            errorText=''
-            size='default'
-          />
-        </div>
-        <div className={`pb-6 ${styles.button}`}>
-          <Button type='primary' size='medium' htmlType='submit'>
-            Р’РѕСЃСЃС‚Р°РЅРѕРІРёС‚СЊ
-          </Button>
-        </div>
-        {errorText && (
-          <p className={`${styles.error} text text_type_main-default pb-6`}>
-            {errorText}
-          </p>
-        )}
-      </form>
-      <div className={`${styles.question} text text_type_main-default pb-6`}>
-        Р’СЃРїРѕРјРЅРёР»Рё РїР°СЂРѕР»СЊ?
-        <Link to={'/login'} className={`pl-2 ${styles.link}`}>
-          Р’РѕР№С‚Рё
-        </Link>
-      </div>
+  <form className='form' onSubmit={handleSubmit}>
+    <div className='mb-6'>
+      <Input
+        type='email'
+        placeholder='РЈРєР°Р¶РёС‚Рµ e-mail'
+        onChange={(e: ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
+        value={email}
+        name='email'
+        error={Boolean(errorText)}
+        errorText={errorText || ''}
+        size='default'
+        onPointerEnterCapture={() => {}}
+        onPointerLeaveCapture={() => {}}
+      />
     </div>
-  </main>
+    <div className='button'>
+      <Button htmlType='submit' type='primary' size='medium'>
+        Р’РѕСЃСЃС‚Р°РЅРѕРІРёС‚СЊ
+      </Button>
+    </div>
+  </form>
 );
-
 ================================================================================
 ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\components\ui\pages\forgot-password\index.ts
 ================================================================================
@@ -2710,80 +2684,62 @@ export { LoginUI } from './login';
 ================================================================================
 ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\components\ui\pages\login\login.tsx
 ================================================================================
-import { FC, useState } from 'react';
-import {
-  Input,
-  Button,
-  PasswordInput
-} from '@zlden/react-developer-burger-ui-components';
-import styles from '../common.module.css';
-import { Link } from 'react-router-dom';
-import { LoginUIProps } from './type';
+import { ChangeEvent, FC, SyntheticEvent } from 'react';
+import { Input, Button } from '@zlden/react-developer-burger-ui-components';
 
-export const LoginUI: FC<LoginUIProps> = ({
-  email,
-  setEmail,
+type TLoginUIProps = {
+  errorText?: string;
+  email: string;
+  password: string;
+  setEmail: (value: string) => void;
+  setPassword: (value: string) => void;
+  handleSubmit: (e: SyntheticEvent) => void;
+};
+
+export const LoginUI: FC<TLoginUIProps> = ({
   errorText,
-  handleSubmit,
+  email,
   password,
-  setPassword
+  setEmail,
+  setPassword,
+  handleSubmit
 }) => (
-  <main className={styles.container}>
-    <div className={`pt-6 ${styles.wrapCenter}`}>
-      <h3 className='pb-6 text text_type_main-medium'>Р’С…РѕРґ</h3>
-      <form
-        className={`pb-15 ${styles.form}`}
-        name='login'
-        onSubmit={handleSubmit}
-      >
-        <>
-          <div className='pb-6'>
-            <Input
-              type='email'
-              placeholder='E-mail'
-              onChange={(e) => setEmail(e.target.value)}
-              value={email}
-              name='email'
-              error={false}
-              errorText=''
-              size='default'
-            />
-          </div>
-          <div className='pb-6'>
-            <PasswordInput
-              onChange={(e) => setPassword(e.target.value)}
-              value={password}
-              name='password'
-            />
-          </div>
-          <div className={`pb-6 ${styles.button}`}>
-            <Button type='primary' size='medium' htmlType='submit'>
-              Р’РѕР№С‚Рё
-            </Button>
-          </div>
-          {errorText && (
-            <p className={`${styles.error} text text_type_main-default pb-6`}>
-              {errorText}
-            </p>
-          )}
-        </>
-      </form>
-      <div className={`pb-4 ${styles.question} text text_type_main-default`}>
-        Р’С‹ - РЅРѕРІС‹Р№ РїРѕР»СЊР·РѕРІР°С‚РµР»СЊ?
-        <Link to='/register' className={`pl-2 ${styles.link}`}>
-          Р—Р°СЂРµРіРёСЃС‚СЂРёСЂРѕРІР°С‚СЊСЃСЏ
-        </Link>
-      </div>
-      <div className={`${styles.question} text text_type_main-default pb-6`}>
-        Р—Р°Р±С‹Р»Рё РїР°СЂРѕР»СЊ?
-        <Link to={'/forgot-password'} className={`pl-2 ${styles.link}`}>
-          Р’РѕСЃСЃС‚Р°РЅРѕРІРёС‚СЊ РїР°СЂРѕР»СЊ
-        </Link>
-      </div>
+  <form className='form' onSubmit={handleSubmit}>
+    <div className='mb-6'>
+      <Input
+        type='email'
+        placeholder='РЈРєР°Р¶РёС‚Рµ e-mail'
+        onChange={(e: ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
+        value={email}
+        name='email'
+        error={Boolean(errorText)}
+        errorText={errorText || ''}
+        size='default'
+        onPointerEnterCapture={() => {}}
+        onPointerLeaveCapture={() => {}}
+      />
     </div>
-  </main>
+    <div className='mb-6'>
+      <Input
+        type='password'
+        placeholder='Р’РІРµРґРёС‚Рµ РїР°СЂРѕР»СЊ'
+        onChange={(e: ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
+        value={password}
+        name='password'
+        error={Boolean(errorText)}
+        errorText={errorText || ''}
+        size='default'
+        onPointerEnterCapture={() => {}}
+        onPointerLeaveCapture={() => {}}
+      />
+    </div>
+    <div className='button'>
+      <Button htmlType='submit' type='primary' size='medium'>
+        Р’РѕР№С‚Рё
+      </Button>
+    </div>
+  </form>
 );
-
 ================================================================================
 ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\components\ui\pages\login\type.ts
 ================================================================================
@@ -2799,7 +2755,6 @@ export type LoginUIProps = PageUIProps & {
 ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\components\ui\pages\profile\index.ts
 ================================================================================
 export { ProfileUI } from './profile';
-
 ================================================================================
 ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\components\ui\pages\profile\profile.module.css
 ================================================================================
@@ -2814,101 +2769,93 @@ export { ProfileUI } from './profile';
 ================================================================================
 ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\components\ui\pages\profile\profile.tsx
 ================================================================================
-import { FC } from 'react';
-
-import { Button, Input } from '@zlden/react-developer-burger-ui-components';
+import { ChangeEvent, FC, SyntheticEvent } from 'react';
+import { Input, Button } from '@zlden/react-developer-burger-ui-components';
 import styles from './profile.module.css';
-import commonStyles from '../common.module.css';
 
-import { ProfileUIProps } from './type';
-import { ProfileMenu } from '@components';
+type TProfileUIProps = {
+  formValue: {
+    name: string;
+    email: string;
+    password: string;
+  };
+  isFormChanged: boolean;
+  handleSubmit: (e: SyntheticEvent) => void;
+  handleCancel: (e: SyntheticEvent) => void;
+  handleInputChange: (e: ChangeEvent<HTMLInputElement>) => void;
+  updateUserError?: string;
+};
 
-export const ProfileUI: FC<ProfileUIProps> = ({
+export const ProfileUI: FC<TProfileUIProps> = ({
   formValue,
   isFormChanged,
-  updateUserError,
   handleSubmit,
   handleCancel,
-  handleInputChange
+  handleInputChange,
+  updateUserError
 }) => (
-  <main className={`${commonStyles.container}`}>
-    <div className={`mt-30 mr-15 ${styles.menu}`}>
-      <ProfileMenu />
+  <form className={styles.form} onSubmit={handleSubmit}>
+    <div className='mb-6'>
+      <Input
+        type='text'
+        placeholder='РРјСЏ'
+        onChange={handleInputChange}
+        value={formValue.name}
+        name='name'
+        error={Boolean(updateUserError)}
+        errorText={updateUserError || ''}
+        size='default'
+        icon='EditIcon'
+        onPointerEnterCapture={() => {}}
+        onPointerLeaveCapture={() => {}}
+      />
     </div>
-    <form
-      className={`mt-30 ${styles.form} ${commonStyles.form}`}
-      onSubmit={handleSubmit}
-    >
-      <>
-        <div className='pb-6'>
-          <Input
-            type={'text'}
-            placeholder={'РРјСЏ'}
-            onChange={handleInputChange}
-            value={formValue.name}
-            name={'name'}
-            error={false}
-            errorText={''}
-            size={'default'}
-            icon={'EditIcon'}
-          />
-        </div>
-        <div className='pb-6'>
-          <Input
-            type={'email'}
-            placeholder={'E-mail'}
-            onChange={handleInputChange}
-            value={formValue.email}
-            name={'email'}
-            error={false}
-            errorText={''}
-            size={'default'}
-            icon={'EditIcon'}
-          />
-        </div>
-        <div className='pb-6'>
-          <Input
-            type={'password'}
-            placeholder={'РџР°СЂРѕР»СЊ'}
-            onChange={handleInputChange}
-            value={formValue.password}
-            name={'password'}
-            error={false}
-            errorText={''}
-            size={'default'}
-            icon={'EditIcon'}
-          />
-        </div>
-        {isFormChanged && (
-          <div className={styles.button}>
-            <Button
-              type='secondary'
-              htmlType='button'
-              size='medium'
-              onClick={handleCancel}
-            >
-              РћС‚РјРµРЅРёС‚СЊ
-            </Button>
-            <Button type='primary' size='medium' htmlType='submit'>
-              РЎРѕС…СЂР°РЅРёС‚СЊ
-            </Button>
-          </div>
-        )}
-        {updateUserError && (
-          <p
-            className={`${commonStyles.error} pt-5 text text_type_main-default`}
-          >
-            {updateUserError}
-          </p>
-        )}
-      </>
-    </form>
-  </main>
+    <div className='mb-6'>
+      <Input
+        type='email'
+        placeholder='Р›РѕРіРёРЅ'
+        onChange={handleInputChange}
+        value={formValue.email}
+        name='email'
+        error={Boolean(updateUserError)}
+        errorText={updateUserError || ''}
+        size='default'
+        icon='EditIcon'
+        onPointerEnterCapture={() => {}}
+        onPointerLeaveCapture={() => {}}
+      />
+    </div>
+    <div className='mb-6'>
+      <Input
+        type='password'
+        placeholder='РџР°СЂРѕР»СЊ'
+        onChange={handleInputChange}
+        value={formValue.password}
+        name='password'
+        error={Boolean(updateUserError)}
+        errorText={updateUserError || ''}
+        size='default'
+        icon='EditIcon'
+        onPointerEnterCapture={() => {}}
+        onPointerLeaveCapture={() => {}}
+      />
+    </div>
+    {isFormChanged && (
+      <div className='buttons'>
+        <Button htmlType='submit' type='primary' size='medium'>
+          РЎРѕС…СЂР°РЅРёС‚СЊ
+        </Button>
+        <Button htmlType='button' type='secondary' size='medium' onClick={handleCancel}>
+          РћС‚РјРµРЅР°
+        </Button>
+      </div>
+    )}
+  </form>
 );
-
 ================================================================================
 ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\components\ui\pages\profile\type.ts
 ================================================================================
+// src/components/ui/pages/profile/type.ts
 import { ChangeEvent, SyntheticEvent } from 'react';
 
 export type ProfileUIProps = {
@@ -2923,7 +2870,6 @@ export type ProfileUIProps = {
   handleInputChange: (e: ChangeEvent<HTMLInputElement>) => void;
   updateUserError?: string;
 };
-
 ================================================================================
 ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\components\ui\pages\profile-orders\index.ts
 ================================================================================
@@ -2986,88 +2932,80 @@ export { RegisterUI } from './register';
 ================================================================================
 ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\components\ui\pages\register\register.tsx
 ================================================================================
-import { FC, useState } from 'react';
-import {
-  Input,
-  Button,
-  PasswordInput
-} from '@zlden/react-developer-burger-ui-components';
-import styles from '../common.module.css';
-import { Link } from 'react-router-dom';
-import { RegisterUIProps } from './type';
+import { ChangeEvent, FC, SyntheticEvent } from 'react';
+import { Input, Button } from '@zlden/react-developer-burger-ui-components';
 
-export const RegisterUI: FC<RegisterUIProps> = ({
-  errorText,
-  email,
-  setEmail,
-  handleSubmit,
-  password,
-  setPassword,
+type TRegisterUIProps = {
+  userName: string;
+  email: string;
+  password: string;
+  setUserName: (value: string) => void;
+  setEmail: (value: string) => void;
+  setPassword: (value: string) => void;
+  handleSubmit: (e: SyntheticEvent) => void;
+  errorText?: string;
+};
+
+export const RegisterUI: FC<TRegisterUIProps> = ({
   userName,
-  setUserName
+  email,
+  password,
+  setUserName,
+  setEmail,
+  setPassword,
+  handleSubmit,
+  errorText
 }) => (
-  <main className={styles.container}>
-    <div className={`pt-6 ${styles.wrapCenter}`}>
-      <h3 className='pb-6 text text_type_main-medium'>Р РµРіРёСЃС‚СЂР°С†РёСЏ</h3>
-      <form
-        className={`pb-15 ${styles.form}`}
-        name='register'
-        onSubmit={handleSubmit}
-      >
-        <>
-          <div className='pb-6'>
-            <Input
-              type='text'
-              placeholder='РРјСЏ'
-              onChange={(e) => setUserName(e.target.value)}
-              value={userName}
-              name='name'
-              error={false}
-              errorText=''
-              size='default'
-            />
-          </div>
-          <div className='pb-6'>
-            <Input
-              type='email'
-              placeholder='E-mail'
-              onChange={(e) => setEmail(e.target.value)}
-              value={email}
-              name={'email'}
-              error={false}
-              errorText=''
-              size={'default'}
-            />
-          </div>
-          <div className='pb-6'>
-            <PasswordInput
-              onChange={(e) => setPassword(e.target.value)}
-              value={password}
-              name='password'
-            />
-          </div>
-          <div className={`pb-6 ${styles.button}`}>
-            <Button type='primary' size='medium' htmlType='submit'>
-              Р—Р°СЂРµРіРёСЃС‚СЂРёСЂРѕРІР°С‚СЊСЃСЏ
-            </Button>
-          </div>
-          {errorText && (
-            <p className={`${styles.error} text text_type_main-default pb-6`}>
-              {errorText}
-            </p>
-          )}
-        </>
-      </form>
-      <div className={`${styles.question} text text_type_main-default pb-6`}>
-        РЈР¶Рµ Р·Р°СЂРµРіРёСЃС‚СЂРёСЂРѕРІР°РЅС‹?
-        <Link to='/login' className={`pl-2 ${styles.link}`}>
-          Р’РѕР№С‚Рё
-        </Link>
-      </div>
+  <form className='form' onSubmit={handleSubmit}>
+    <div className='mb-6'>
+      <Input
+        type='text'
+        placeholder='РРјСЏ'
+        onChange={(e: ChangeEvent<HTMLInputElement>) => setUserName(e.target.value)}
+        value={userName}
+        name='name'
+        error={Boolean(errorText)}
+        errorText={errorText || ''}
+        size='default'
+        onPointerEnterCapture={() => {}}
+        onPointerLeaveCapture={() => {}}
+      />
     </div>
-  </main>
+    <div className='mb-6'>
+      <Input
+        type='email'
+        placeholder='РЈРєР°Р¶РёС‚Рµ e-mail'
+        onChange={(e: ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
+        value={email}
+        name='email'
+        error={Boolean(errorText)}
+        errorText={errorText || ''}
+        size='default'
+        onPointerEnterCapture={() => {}}
+        onPointerLeaveCapture={() => {}}
+      />
+    </div>
+    <div className='mb-6'>
+      <Input
+        type='password'
+        placeholder='Р’РІРµРґРёС‚Рµ РїР°СЂРѕР»СЊ'
+        onChange={(e: ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
+        value={password}
+        name='password'
+        error={Boolean(errorText)}
+        errorText={errorText || ''}
+        size='default'
+        onPointerEnterCapture={() => {}}
+        onPointerLeaveCapture={() => {}}
+      />
+    </div>
+    <div className='button'>
+      <Button htmlType='submit' type='primary' size='medium'>
+        Р—Р°СЂРµРіРёСЃС‚СЂРёСЂРѕРІР°С‚СЊСЃСЏ
+      </Button>
+    </div>
+  </form>
 );
-
 ================================================================================
 ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\components\ui\pages\register\type.ts
 ================================================================================
@@ -3089,72 +3027,62 @@ export { ResetPasswordUI } from './reset-password';
 ================================================================================
 ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\components\ui\pages\reset-password\reset-password.tsx
 ================================================================================
-import { FC } from 'react';
-import {
-  Input,
-  Button,
-  PasswordInput
-} from '@zlden/react-developer-burger-ui-components';
-import styles from '../common.module.css';
-import { Link } from 'react-router-dom';
-import { ResetPasswordUIProps } from './type';
+import { ChangeEvent, FC, SyntheticEvent } from 'react';
+import { Input, Button } from '@zlden/react-developer-burger-ui-components';
 
-export const ResetPasswordUI: FC<ResetPasswordUIProps> = ({
-  errorText,
+type TResetPasswordUIProps = {
+  password: string;
+  token: string;
+  setPassword: (value: string) => void;
+  setToken: (value: string) => void;
+  handleSubmit: (e: SyntheticEvent) => void;
+  errorText?: string;
+};
+
+export const ResetPasswordUI: FC<TResetPasswordUIProps> = ({
   password,
-  setPassword,
-  handleSubmit,
   token,
-  setToken
+  setPassword,
+  setToken,
+  handleSubmit,
+  errorText
 }) => (
-  <main className={styles.container}>
-    <div className={`pt-6 ${styles.wrapCenter}`}>
-      <h3 className='pb-6 text text_type_main-medium'>Р’РѕСЃСЃС‚Р°РЅРѕРІР»РµРЅРёРµ РїР°СЂРѕР»СЏ</h3>
-      <form
-        className={`pb-15 ${styles.form}`}
-        name='login'
-        onSubmit={handleSubmit}
-      >
-        <div className='pb-6'>
-          <PasswordInput
-            onChange={(e) => setPassword(e.target.value)}
-            value={password}
-            name='password'
-          />
-        </div>
-        <div className='pb-6'>
-          <Input
-            type='text'
-            placeholder='Р’РІРµРґРёС‚Рµ РєРѕРґ РёР· РїРёСЃСЊРјР°'
-            onChange={(e) => setToken(e.target.value)}
-            value={token}
-            name='token'
-            error={false}
-            errorText=''
-            size='default'
-          />
-        </div>
-        <div className={`pb-6 ${styles.button}`}>
-          <Button type='primary' size='medium' htmlType='submit'>
-            РЎРѕС…СЂР°РЅРёС‚СЊ
-          </Button>
-        </div>
-        {errorText && (
-          <p className={`${styles.error} text text_type_main-default pb-6`}>
-            {errorText}
-          </p>
-        )}
-      </form>
-      <div className={`${styles.question} text text_type_main-default pb-6`}>
-        Р’СЃРїРѕРјРЅРёР»Рё РїР°СЂРѕР»СЊ?
-        <Link to='/login' className={`pl-2 ${styles.link}`}>
-          Р’РѕР№С‚Рё
-        </Link>
-      </div>
+  <form className='form' onSubmit={handleSubmit}>
+    <div className='mb-6'>
+      <Input
+        type='password'
+        placeholder='Р’РІРµРґРёС‚Рµ РЅРѕРІС‹Р№ РїР°СЂРѕР»СЊ'
+        onChange={(e: ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
+        value={password}
+        name='password'
+        error={Boolean(errorText)}
+        errorText={errorText || ''}
+        size='default'
+        onPointerEnterCapture={() => {}}
+        onPointerLeaveCapture={() => {}}
+      />
     </div>
-  </main>
+    <div className='mb-6'>
+      <Input
+        type='text'
+        placeholder='Р’РІРµРґРёС‚Рµ РєРѕРґ РёР· РїРёСЃСЊРјР°'
+        onChange={(e: ChangeEvent<HTMLInputElement>) => setToken(e.target.value)}
+        value={token}
+        name='token'
+        error={Boolean(errorText)}
+        errorText={errorText || ''}
+        size='default'
+        onPointerEnterCapture={() => {}}
+        onPointerLeaveCapture={() => {}}
+      />
+    </div>
+    <div className='button'>
+      <Button htmlType='submit' type='primary' size='medium'>
+        РЎРѕС…СЂР°РЅРёС‚СЊ
+      </Button>
+    </div>
+  </form>
 );
-
 ================================================================================
 ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\components\ui\pages\reset-password\type.ts
 ================================================================================
@@ -3514,7 +3442,6 @@ export const Feed: FC = () => {
 
   return <FeedUI orders={publicOrders} handleGetFeeds={handleGetFeeds} />;
 };
-
 ================================================================================
 ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\pages\feed\index.ts
 ================================================================================
@@ -3532,19 +3459,18 @@ import { ForgotPasswordUI } from '@ui-pages';
 export const ForgotPassword: FC = () => {
   const [email, setEmail] = useState('');
   const [error, setError] = useState<Error | null>(null);
-
   const navigate = useNavigate();
 
   const handleSubmit = (e: SyntheticEvent) => {
     e.preventDefault();
-
     setError(null);
+
     forgotPasswordApi({ email })
       .then(() => {
         localStorage.setItem('resetPassword', 'true');
         navigate('/reset-password', { replace: true });
       })
-      .catch((err) => setError(err));
+      .catch((err: Error) => setError(err));
   };
 
   return (
@@ -3556,7 +3482,6 @@ export const ForgotPassword: FC = () => {
     />
   );
 };
-
 ================================================================================
 ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\pages\forgot-password\index.ts
 ================================================================================
@@ -3595,14 +3520,13 @@ export const Login: FC = () => {
     <LoginUI
       errorText={error}
       email={email}
-      setEmail={setEmail}
       password={password}
+      setEmail={setEmail}
       setPassword={setPassword}
       handleSubmit={handleSubmit}
     />
   );
 };
-
 ================================================================================
 ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\pages\not-fount-404\index.ts
 ================================================================================
@@ -3642,7 +3566,6 @@ export const Profile: FC = () => {
     password: ''
   });
 
-  // РЈР±РёСЂР°РµРј useEffect СЃ getUser, С‚Р°Рє РєР°Рє РїРѕР»СЊР·РѕРІР°С‚РµР»СЊ СѓР¶Рµ Р·Р°РіСЂСѓР¶РµРЅ РІ App
   useEffect(() => {
     setFormValue((prevState) => ({
       ...prevState,
@@ -3698,7 +3621,6 @@ export const Profile: FC = () => {
     />
   );
 };
-
 ================================================================================
 ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\pages\profile-orders\index.ts
 ================================================================================
@@ -3707,10 +3629,10 @@ export { ProfileOrders } from './profile-orders';
 ================================================================================
 ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\pages\profile-orders\profile-orders.tsx
 ================================================================================
-import { ProfileOrdersUI } from '@ui-pages';
 import { FC, useEffect } from 'react';
 import { useDispatch, useSelector } from '../../services/store';
 import { fetchUserOrders } from '../../services/slices/feedSlice';
+import { ProfileOrdersUI } from '@ui-pages';
 import { Preloader } from '@ui';
 
 export const ProfileOrders: FC = () => {
@@ -3727,7 +3649,6 @@ export const ProfileOrders: FC = () => {
 
   return <ProfileOrdersUI orders={userOrders} />;
 };
-
 ================================================================================
 ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\pages\register\index.ts
 ================================================================================
@@ -3771,7 +3692,6 @@ export const Register: FC = () => {
     />
   );
 };
-
 ================================================================================
 ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\pages\reset-password\index.ts
 ================================================================================
@@ -3795,12 +3715,13 @@ export const ResetPassword: FC = () => {
   const handleSubmit = (e: SyntheticEvent) => {
     e.preventDefault();
     setError(null);
+
     resetPasswordApi({ password, token })
       .then(() => {
         localStorage.removeItem('resetPassword');
         navigate('/login');
       })
-      .catch((err) => setError(err));
+      .catch((err: Error) => setError(err));
   };
 
   useEffect(() => {
@@ -3820,7 +3741,6 @@ export const ResetPassword: FC = () => {
     />
   );
 };
-
 ================================================================================
 ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\pages\index.ts
 ================================================================================
@@ -4750,16 +4670,14 @@ import ordersReducer from './slices/ordersSlice';
 import userReducer from './slices/userSlice';
 import feedReducer from './slices/feedSlice';
 
-const rootReducer = {
-  ingredients: ingredientsReducer,
-  burgerConstructor: constructorReducer,
-  orders: ordersReducer,
-  user: userReducer,
-  feed: feedReducer
-};
-
 const store = configureStore({
-  reducer: rootReducer,
+  reducer: {
+    ingredients: ingredientsReducer,
+    burgerConstructor: constructorReducer,
+    orders: ordersReducer,
+    user: userReducer,
+    feed: feedReducer
+  },
   devTools: process.env.NODE_ENV !== 'production'
 });
 
@@ -4770,7 +4688,6 @@ export const useDispatch: () => AppDispatch = () => dispatchHook();
 export const useSelector: TypedUseSelectorHook<RootState> = selectorHook;
 
 export default store;
-
 ================================================================================
 ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\stories\BurgerConstructor.stories.ts
 ================================================================================
@@ -5290,13 +5207,16 @@ export const DefaultProfileMenu: Story = {
 };
 
 ================================================================================
+ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\utils\types\index.ts
+================================================================================
+export * from '../types';
+================================================================================
 ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\utils\burger-api.ts
 ================================================================================
-import { setCookie, getCookie } from './cookie';
+import { setCookie, getCookie, deleteCookie } from './cookie';
 import { TIngredient, TOrder, TOrdersData, TUser } from './types';
 
-const URL =
-  process.env.BURGER_API_URL || 'https://norma.nomoreparties.space/api';
+const URL = process.env.BURGER_API_URL || 'https://norma.nomoreparties.space/api';
 
 const checkResponse = <T>(res: Response): Promise<T> =>
   res.ok ? res.json() : res.json().then((err) => Promise.reject(err));
@@ -5325,6 +5245,7 @@ export const refreshToken = (): Promise<TRefreshResponse> =>
       if (!refreshData.success) {
         return Promise.reject(refreshData);
       }
+
       localStorage.setItem('refreshToken', refreshData.refreshToken);
       setCookie('accessToken', refreshData.accessToken);
       return refreshData;
@@ -5333,22 +5254,26 @@ export const refreshToken = (): Promise<TRefreshResponse> =>
 export const fetchWithRefresh = async <T>(
   url: RequestInfo,
   options: RequestInit
-) => {
+): Promise<T> => {
   try {
     const res = await fetch(url, options);
     return await checkResponse<T>(res);
-  } catch (err) {
-    if ((err as { message: string }).message === 'jwt expired') {
+  } catch (err: any) {
+    if (err?.message === 'jwt expired') {
       const refreshData = await refreshToken();
-      if (options.headers) {
-        (options.headers as { [key: string]: string }).authorization =
-          refreshData.accessToken;
-      }
-      const res = await fetch(url, options);
+
+      const headers = new Headers(options.headers);
+      headers.set('authorization', refreshData.accessToken);
+
+      const res = await fetch(url, {
+        ...options,
+        headers
+      });
+
       return await checkResponse<T>(res);
-    } else {
-      return Promise.reject(err);
     }
+
+    return Promise.reject(err);
   }
 };
 
@@ -5366,33 +5291,9 @@ type TOrdersResponse = TServerResponse<{
   data: TOrder[];
 }>;
 
-export const getIngredientsApi = () =>
-  fetch(`${URL}/ingredients`)
-    .then((res) => checkResponse<TIngredientsResponse>(res))
-    .then((data) => {
-      if (data?.success) return data.data;
-      return Promise.reject(data);
-    });
-
-export const getFeedsApi = () =>
-  fetch(`${URL}/orders/all`)
-    .then((res) => checkResponse<TFeedsResponse>(res))
-    .then((data) => {
-      if (data?.success) return data;
-      return Promise.reject(data);
-    });
-
-export const getOrdersApi = () =>
-  fetchWithRefresh<TFeedsResponse>(`${URL}/orders`, {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json;charset=utf-8',
-      authorization: getCookie('accessToken')
-    } as HeadersInit
-  }).then((data) => {
-    if (data?.success) return data.orders;
-    return Promise.reject(data);
-  });
+type TOrderResponse = TServerResponse<{
+  orders: TOrder[];
+}>;
 
 type TOwner = {
   name: string;
@@ -5417,13 +5318,51 @@ type TNewOrderResponse = TServerResponse<{
   name: string;
 }>;
 
+type TUserResponse = TServerResponse<{
+  user: TUser;
+}>;
+
+type TAuthResponse = TServerResponse<{
+  refreshToken: string;
+  accessToken: string;
+  user: TUser;
+}>;
+
+export const getIngredientsApi = () =>
+  fetch(`${URL}/ingredients`)
+    .then((res) => checkResponse<TIngredientsResponse>(res))
+    .then((data) => {
+      if (data?.success) return data.data;
+      return Promise.reject(data);
+    });
+
+export const getFeedsApi = () =>
+  fetch(`${URL}/orders/all`)
+    .then((res) => checkResponse<TFeedsResponse>(res))
+    .then((data) => {
+      if (data?.success) return data;
+      return Promise.reject(data);
+    });
+
+export const getOrdersApi = () =>
+  fetchWithRefresh<TFeedsResponse>(`${URL}/orders`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json;charset=utf-8',
+      authorization: getCookie('accessToken') || ''
+    }
+  }).then((data) => {
+    if (data?.success) return data.orders;
+    return Promise.reject(data);
+  });
+
 export const orderBurgerApi = (data: string[]) =>
   fetchWithRefresh<TNewOrderResponse>(`${URL}/orders`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json;charset=utf-8',
-      authorization: getCookie('accessToken')
-    } as HeadersInit,
+      authorization: getCookie('accessToken') || ''
+    },
     body: JSON.stringify({
       ingredients: data
     })
@@ -5431,10 +5370,6 @@ export const orderBurgerApi = (data: string[]) =>
     if (data?.success) return data;
     return Promise.reject(data);
   });
-
-type TOrderResponse = TServerResponse<{
-  orders: TOrder[];
-}>;
 
 export const getOrderByNumberApi = (number: number): Promise<TOrderResponse> =>
   fetch(`${URL}/orders/${number}`, {
@@ -5450,11 +5385,10 @@ export type TRegisterData = {
   password: string;
 };
 
-type TAuthResponse = TServerResponse<{
-  refreshToken: string;
-  accessToken: string;
-  user: TUser;
-}>;
+export type TLoginData = {
+  email: string;
+  password: string;
+};
 
 export const registerUserApi = (data: TRegisterData) =>
   fetch(`${URL}/auth/register`, {
@@ -5469,11 +5403,6 @@ export const registerUserApi = (data: TRegisterData) =>
       if (data?.success) return data;
       return Promise.reject(data);
     });
-
-export type TLoginData = {
-  email: string;
-  password: string;
-};
 
 export const loginUserApi = (data: TLoginData) =>
   fetch(`${URL}/auth/login`, {
@@ -5517,13 +5446,11 @@ export const resetPasswordApi = (data: { password: string; token: string }) =>
       return Promise.reject(data);
     });
 
-type TUserResponse = TServerResponse<{ user: TUser }>;
-
 export const getUserApi = () =>
   fetchWithRefresh<TUserResponse>(`${URL}/auth/user`, {
     headers: {
-      authorization: getCookie('accessToken')
-    } as HeadersInit
+      authorization: getCookie('accessToken') || ''
+    }
   });
 
 export const updateUserApi = (user: Partial<TRegisterData>) =>
@@ -5531,8 +5458,8 @@ export const updateUserApi = (user: Partial<TRegisterData>) =>
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json;charset=utf-8',
-      authorization: getCookie('accessToken')
-    } as HeadersInit,
+      authorization: getCookie('accessToken') || ''
+    },
     body: JSON.stringify(user)
   });
 
@@ -5839,23 +5766,38 @@ export type TTabMode = 'bun' | 'sauce' | 'main';
 ================================================================================
 ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\__mocks__\fileMock.js
 ================================================================================
-module.exports = 'test-file-stub';
+const content = 'test-file-stub';
+export default content;
 ================================================================================
 ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\global.d.ts
 ================================================================================
-import 'react';
+declare module '*.css';
+declare module '*.module.css';
 
-declare module 'react' {
-  interface HTMLAttributes<T> {
-    onPointerEnterCapture?: (e: React.PointerEvent<T>) => void;
-    onPointerLeaveCapture?: (e: React.PointerEvent<T>) => void;
-  }
-  interface RefAttributes<T> {
-    onPointerEnterCapture?: (e: React.PointerEvent<T>) => void;
-    onPointerLeaveCapture?: (e: React.PointerEvent<T>) => void;
-  }
+declare module '*.svg' {
+  const content: string;
+  export default content;
 }
 
+declare module '*.png' {
+  const content: string;
+  export default content;
+}
+
+declare module '*.jpg' {
+  const content: string;
+  export default content;
+}
+
+declare module '*.jpeg' {
+  const content: string;
+  export default content;
+}
+
+declare module '*.gif' {
+  const content: string;
+  export default content;
+}
 ================================================================================
 ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\index.css
 ================================================================================
@@ -5871,6 +5813,7 @@ import * as ReactDOMClient from 'react-dom/client';
 import { Provider } from 'react-redux';
 import store from './services/store';
 import App from './components/app/app';
+import './index.css';
 
 const container = document.getElementById('root') as HTMLElement;
 const root = ReactDOMClient.createRoot(container!);
@@ -5882,7 +5825,6 @@ root.render(
     </Provider>
   </React.StrictMode>
 );
-
 ================================================================================
 ФАЙЛ: C:\Users\danil\Desktop\фронтенд\stellar-burgers\src\setupTests.ts
 ================================================================================

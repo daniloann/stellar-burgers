@@ -23,8 +23,8 @@ export const Login: FC = () => {
     <LoginUI
       errorText={error}
       email={email}
-      setEmail={setEmail}
       password={password}
+      setEmail={setEmail}
       setPassword={setPassword}
       handleSubmit={handleSubmit}
     />

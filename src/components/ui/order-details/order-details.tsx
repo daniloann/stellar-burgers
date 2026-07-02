@@ -19,7 +19,7 @@ export const OrderDetailsUI: React.FC<OrderDetailsUIProps> = ({
       src={doneImg}
       alt='изображение статуса заказа.'
     />
-    <p className='text text_type_main-default mb-1'>
+    <p className='text text_type_main-medium mb-1'>
       Ваш заказ начали готовить
     </p>
     <p className={`${styles.text} text text_type_main-default`}>

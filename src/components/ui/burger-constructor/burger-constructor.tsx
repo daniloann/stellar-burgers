@@ -20,10 +20,7 @@ export const BurgerConstructorUI: FC<BurgerConstructorUIProps> = ({
 }) => (
   <section className={styles.burger_constructor}>
     {constructorItems.bun ? (
-      <div
-        className={`${styles.element} mb-4 mr-4`}
-        data-testid="bun-top"
-      >
+      <div className={`${styles.element} mb-4 mr-4`} data-testid="bun-top">
         <ConstructorElement
           type='top'
           isLocked
@@ -37,7 +34,7 @@ export const BurgerConstructorUI: FC<BurgerConstructorUIProps> = ({
         className={`${styles.noBuns} ${styles.noBunsTop} ml-8 mb-4 mr-5 text text_type_main-default`}
         data-testid="bun-top-empty"
       >
-        Выберите булки
+        Выберите булку
       </div>
     )}
 
@@ -65,10 +62,7 @@ export const BurgerConstructorUI: FC<BurgerConstructorUIProps> = ({
     </ul>
 
     {constructorItems.bun ? (
-      <div
-        className={`${styles.element} mt-4 mr-4`}
-        data-testid="bun-bottom"
-      >
+      <div className={`${styles.element} mt-4 mr-4`} data-testid="bun-bottom">
         <ConstructorElement
           type='bottom'
           isLocked
@@ -82,7 +76,7 @@ export const BurgerConstructorUI: FC<BurgerConstructorUIProps> = ({
         className={`${styles.noBuns} ${styles.noBunsBottom} ml-8 mb-4 mr-5 text text_type_main-default`}
         data-testid="bun-bottom-empty"
       >
-        Выберите булки
+        Выберите булку
       </div>
     )}
 
