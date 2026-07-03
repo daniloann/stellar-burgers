@@ -1,144 +1,45 @@
 import { test, expect } from '@playwright/test';
-
-// Моковые данные для ингредиентов
-const mockIngredients = {
-  success: true,
-  data: [
-    {
-      _id: '60d3b41abdacab0026a733c6',
-      name: 'Краторная булка N-200i',
-      type: 'bun',
-      proteins: 80,
-      fat: 20,
-      carbohydrates: 100,
-      calories: 420,
-      price: 125,
-      image: 'https://code.s3.yandex.net/react/code/bun-02.png',
-      image_large: 'https://code.s3.yandex.net/react/code/bun-02-large.png',
-      image_mobile: 'https://code.s3.yandex.net/react/code/bun-02-mobile.png',
-    },
-    {
-      _id: '60d3b41abdacab0026a733d0',
-      name: 'Флюоресцентная булка R2-D3',
-      type: 'bun',
-      proteins: 44,
-      fat: 26,
-      carbohydrates: 85,
-      calories: 643,
-      price: 988,
-      image: 'https://code.s3.yandex.net/react/code/bun-01.png',
-      image_large: 'https://code.s3.yandex.net/react/code/bun-01-large.png',
-      image_mobile: 'https://code.s3.yandex.net/react/code/bun-01-mobile.png',
-    },
-    {
-      _id: '60d3b41abdacab0026a733c8',
-      name: 'Филе Люминесцентного тетраодонтимформа',
-      type: 'main',
-      proteins: 44,
-      fat: 26,
-      carbohydrates: 85,
-      calories: 643,
-      price: 988,
-      image: 'https://code.s3.yandex.net/react/code/meat-03.png',
-      image_large: 'https://code.s3.yandex.net/react/code/meat-03-large.png',
-      image_mobile: 'https://code.s3.yandex.net/react/code/meat-03-mobile.png',
-    },
-    {
-      _id: '60d3b41abdacab0026a733ca',
-      name: 'Соус Spicy-X',
-      type: 'sauce',
-      proteins: 30,
-      fat: 20,
-      carbohydrates: 40,
-      calories: 30,
-      price: 90,
-      image: 'https://code.s3.yandex.net/react/code/sauce-02.png',
-      image_large: 'https://code.s3.yandex.net/react/code/sauce-02-large.png',
-      image_mobile: 'https://code.s3.yandex.net/react/code/sauce-02-mobile.png',
-    },
-  ],
-};
-
-const mockOrderResponse = {
-  success: true,
-  order: {
-    _id: '66a8e6d5f3b4c5d6e7f8g9h0',
-    status: 'done',
-    name: 'Флюоресцентный бургер',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    number: 12345,
-    ingredients: ['60d3b41abdacab0026a733c6', '60d3b41abdacab0026a733c8', '60d3b41abdacab0026a733ca'],
-  },
-  name: 'Флюоресцентный бургер',
-};
-
-// Мок пользователя
-const mockUser = {
-  success: true,
-  user: {
-    email: 'test@test.com',
-    name: 'Test User',
-  },
-};
-
-const mockTokens = {
-  accessToken: 'Bearer mock-access-token',
-  refreshToken: 'mock-refresh-token',
-};
+import path from 'path';
 
 test.describe('Конструктор бургера', () => {
   test.beforeEach(async ({ page, context }) => {
-    // 1. Перехват запроса на ингредиенты
-    await page.route('**/api/ingredients', async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify(mockIngredients),
-      });
-    });
-
-    // 2. Перехват запроса на получение пользователя (авторизация)
-    await page.route('**/api/auth/user', async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify(mockUser),
-      });
-    });
-
-    // 3. Перехват запроса на создание заказа
-    await page.route('**/api/orders', async (route) => {
-      if (route.request().method() === 'POST') {
-        await route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify(mockOrderResponse),
-        });
-      } else {
-        await route.continue();
-      }
-    });
-
-    // 4. Установка токенов для авторизации
+    // 1. Установка фейковых токенов для авторизации
     await context.addCookies([
       {
         name: 'accessToken',
-        value: mockTokens.accessToken,
+        value: 'Bearer mock-token',
         path: '/',
         domain: 'localhost',
       },
     ]);
 
-    await page.addInitScript((tokens) => {
-      localStorage.setItem('refreshToken', tokens.refreshToken);
-    }, mockTokens);
+    await page.addInitScript(() => {
+      localStorage.setItem('refreshToken', 'mock-refresh-token');
+    });
 
-    // 5. Переход на страницу
+    // 2. Перехват запросов через HAR файлы
+    await page.routeFromHAR(path.join(__dirname, 'hars/ingredients.har'), {
+      url: '**/api/ingredients',
+      update: false,
+    });
+
+    await page.routeFromHAR(path.join(__dirname, 'hars/user.har'), {
+      url: '**/api/auth/user',
+      update: false,
+    });
+
+    await page.routeFromHAR(path.join(__dirname, 'hars/orders.har'), {
+      url: '**/api/orders',
+      update: false,
+    });
+
+    // 3. Переход на страницу
     await page.goto('http://localhost:4000');
     await page.waitForLoadState('domcontentloaded');
-    await page.waitForSelector('[data-testid="ingredient-60d3b41abdacab0026a733c6"]', { 
-      timeout: 15000 
+    
+    // 4. Ждем загрузки ингредиентов
+    await page.waitForSelector('[data-testid="ingredient-60d3b41abdacab0026a733c6"]', {
+      timeout: 15000,
     });
     await page.waitForTimeout(1000);
   });
@@ -158,6 +59,7 @@ test.describe('Конструктор бургера', () => {
     await expect(bun).toBeVisible();
     const addButton = bun.locator('button:has-text("Добавить")');
     await addButton.click({ force: true });
+    
     await page.waitForSelector('[data-testid="bun-top"]', { timeout: 5000 });
     await expect(page.locator('[data-testid="bun-top"]')).toBeVisible();
     await expect(page.locator('[data-testid="bun-top"]')).toContainText('Краторная булка');
@@ -169,11 +71,13 @@ test.describe('Конструктор бургера', () => {
     await expect(main).toBeVisible();
     const addButton = main.locator('button:has-text("Добавить")');
     await addButton.click({ force: true });
+    
     await expect(page.locator('[data-testid="constructor-items"]')).toContainText('Филе Люминесцентного');
   });
 
   test('должен открыть модальное окно ингредиента', async ({ page }) => {
     await page.locator('[data-testid="ingredient-60d3b41abdacab0026a733c6"]').click({ force: true });
+    
     await page.waitForSelector('[data-testid="modal"]', { timeout: 5000 });
     await expect(page.locator('[data-testid="modal"]')).toBeVisible();
     await expect(page.locator('[data-testid="modal"]')).toContainText('Краторная булка');
@@ -183,52 +87,64 @@ test.describe('Конструктор бургера', () => {
     await page.locator('[data-testid="ingredient-60d3b41abdacab0026a733c6"]').click({ force: true });
     await page.waitForSelector('[data-testid="modal"]', { timeout: 5000 });
     await expect(page.locator('[data-testid="modal"]')).toBeVisible();
+    
     await page.locator('[data-testid="close-modal-button"]').click({ force: true });
     await expect(page.locator('[data-testid="modal"]')).not.toBeVisible({ timeout: 5000 });
   });
 
   test('должен создать заказ', async ({ page }) => {
     // 1. Добавить булку
-    const bunAddButton = page.locator('[data-testid="ingredient-60d3b41abdacab0026a733c6"] button:has-text("Добавить")');
+    const bunAddButton = page.locator(
+      '[data-testid="ingredient-60d3b41abdacab0026a733c6"] button:has-text("Добавить")'
+    );
     await bunAddButton.click({ force: true });
     await page.waitForTimeout(1000);
-    
+
     // 2. Проверить что булка добавилась
     const bunTop = page.locator('[data-testid="bun-top"]');
     await expect(bunTop).toBeVisible({ timeout: 5000 });
     await expect(bunTop).toContainText('Краторная булка');
-    
+
     // 3. Добавить начинку
-    const mainAddButton = page.locator('[data-testid="ingredient-60d3b41abdacab0026a733c8"] button:has-text("Добавить")');
+    const mainAddButton = page.locator(
+      '[data-testid="ingredient-60d3b41abdacab0026a733c8"] button:has-text("Добавить")'
+    );
     await mainAddButton.click({ force: true });
     await page.waitForTimeout(1000);
-    
+
     // 4. Проверить что начинка добавилась
-    await expect(page.locator('[data-testid="constructor-items"]')).toContainText('Филе Люминесцентного');
-    
+    await expect(page.locator('[data-testid="constructor-items"]')).toContainText(
+      'Филе Люминесцентного'
+    );
+
     // 5. Проверить что кнопка "Оформить заказ" стала активной
     const orderButton = page.locator('[data-testid="order-button"]');
     await expect(orderButton).toBeEnabled({ timeout: 5000 });
-    
+
     // 6. Кликнуть "Оформить заказ"
     await orderButton.click({ force: true });
-    await page.waitForTimeout(2000);
-    
-    // 7. Проверить модальное окно с заказом
-    await page.waitForSelector('[data-testid="modal"]', { timeout: 15000 });
+    await page.waitForTimeout(3000);
+
+    // 7. Проверить URL (не должно быть редиректа на логин)
+    const currentUrl = page.url();
+    console.log('Текущий URL:', currentUrl);
+    expect(currentUrl).not.toContain('login');
+
+    // 8. Проверить модальное окно с заказом
+    await page.waitForSelector('[data-testid="modal"]', { timeout: 20000 });
     await expect(page.locator('[data-testid="modal"]')).toBeVisible();
-    
-    // 8. Проверить номер заказа
+
+    // 9. Проверить номер заказа
     await page.waitForSelector('[data-testid="order-number"]', { timeout: 5000 });
     await expect(page.locator('[data-testid="order-number"]')).toBeVisible();
     await expect(page.locator('[data-testid="order-number"]')).toHaveText('12345');
-    
-    // 9. Проверить что конструктор пуст
+
+    // 10. Проверить что конструктор пуст
     await expect(page.locator('[data-testid="bun-top-empty"]')).toBeVisible();
     await expect(page.locator('[data-testid="bun-bottom-empty"]')).toBeVisible();
     await expect(page.locator('[data-testid="constructor-items-empty"]')).toBeVisible();
-    
-    // 10. Закрыть модальное окно
+
+    // 11. Закрыть модальное окно
     await page.locator('[data-testid="close-modal-button"]').click({ force: true });
     await expect(page.locator('[data-testid="modal"]')).not.toBeVisible({ timeout: 5000 });
   });
