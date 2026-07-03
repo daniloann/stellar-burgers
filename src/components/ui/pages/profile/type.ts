@@ -1,3 +1,4 @@
+// src/components/ui/pages/profile/type.ts
 import { ChangeEvent, SyntheticEvent } from 'react';
 
 export type ProfileUIProps = {

@@ -21,13 +21,10 @@ export const OrderInfo: FC = () => {
   // Получаем данные из стора через селекторы
   const {
     currentOrder: orderData,
-    currentOrderLoading: loading,
-    data: ingredients
-  } = useSelector((state) => ({
-    currentOrder: state.feed.currentOrder,
-    currentOrderLoading: state.feed.currentOrderLoading,
-    data: state.ingredients.data
-  }));
+    currentOrderLoading: loading
+  } = useSelector((state) => state.feed);
+  
+  const ingredients = useSelector((state) => state.ingredients.data);
 
   useEffect(() => {
     if (number) {

@@ -14,8 +14,8 @@ interface FeedState {
   totalToday: number;
   loading: boolean;
   userOrdersLoading: boolean;
-  currentOrder: TOrder | null; // Добавляем поле для текущего заказа
-  currentOrderLoading: boolean; // Добавляем поле для статуса загрузки
+  currentOrder: TOrder | null; // Поле для текущего заказа
+  currentOrderLoading: boolean; // Поле для статуса загрузки
   error: string | null;
 }
 

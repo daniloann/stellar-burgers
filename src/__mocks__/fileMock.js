@@ -1,1 +1,2 @@
-module.exports = 'test-file-stub';
+const content = 'test-file-stub';
+export default content;

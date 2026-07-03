@@ -13,7 +13,6 @@ export const Profile: FC = () => {
     password: ''
   });
 
-  // Убираем useEffect с getUser, так как пользователь уже загружен в App
   useEffect(() => {
     setFormValue((prevState) => ({
       ...prevState,

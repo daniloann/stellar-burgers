@@ -1,5 +1,4 @@
-import { FC, useMemo } from 'react';
-import { TConstructorIngredient } from '@utils-types';
+import { FC } from 'react';
 import { BurgerConstructorUI } from '@ui';
 import { useDispatch, useSelector } from '../../services/store';
 import { clearConstructor } from '../../services/slices/constructorSlice';
@@ -8,13 +7,18 @@ import {
   closeOrderModal
 } from '../../services/slices/ordersSlice';
 import { useNavigate } from 'react-router-dom';
+import { useMemo } from 'react';
+import { TConstructorIngredient } from '@utils-types';
 
 export const BurgerConstructor: FC = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-
-  const { bun, ingredients } = useSelector((state) => state.burgerConstructor);
-  const { orderRequest, orderModalData } = useSelector((state) => state.orders);
+  const { bun, ingredients } = useSelector(
+    (state) => state.burgerConstructor
+  );
+  const { orderRequest, orderModalData } = useSelector(
+    (state) => state.orders
+  );
   const { user } = useSelector((state) => state.user);
 
   const constructorItems = {
@@ -24,18 +28,17 @@ export const BurgerConstructor: FC = () => {
 
   const onOrderClick = () => {
     if (!constructorItems.bun || orderRequest) return;
-
     if (!user) {
       navigate('/login');
       return;
     }
-
+    
     const ingredientsIds = [
       constructorItems.bun._id,
       ...constructorItems.ingredients.map((item) => item._id),
       constructorItems.bun._id
     ];
-
+    
     dispatch(createOrder(ingredientsIds))
       .unwrap()
       .then(() => {

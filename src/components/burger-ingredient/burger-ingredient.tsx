@@ -6,7 +6,7 @@ import { useDispatch } from '../../services/store';
 import { addIngredient } from '../../services/slices/constructorSlice';
 
 export const BurgerIngredient: FC<TBurgerIngredientProps> = memo(
-  ({ ingredient, count }) => {
+  ({ ingredient, count, testId }) => {
     const location = useLocation();
     const dispatch = useDispatch();
 
@@ -20,7 +20,8 @@ export const BurgerIngredient: FC<TBurgerIngredientProps> = memo(
         count={count}
         locationState={{ background: location }}
         handleAdd={handleAdd}
+        testId={testId}
       />
     );
   }
-);
+); 

@@ -13,11 +13,9 @@ module.exports = {
         use: ['babel-loader']
       },
       {
-        test: /\.(ts)x?$/,
+        test: /\.(ts|tsx)$/,
         exclude: /node_modules/,
-        use: {
-          loader: 'ts-loader'
-        }
+        use: { loader: 'ts-loader' }
       },
       {
         test: /\.css$/,
@@ -31,9 +29,7 @@ module.exports = {
           'style-loader',
           {
             loader: 'css-loader',
-            options: {
-              modules: true
-            }
+            options: { modules: true }
           }
         ]
       },
@@ -57,19 +53,7 @@ module.exports = {
     new Dotenv()
   ],
   resolve: {
-    extensions: [
-      '*',
-      '.js',
-      '.jsx',
-      '.ts',
-      '.tsx',
-      '.json',
-      '.css',
-      '.scss',
-      '.png',
-      '.svg',
-      '.jpg'
-    ],
+    extensions: ['*', '.js', '.jsx', '.ts', '.tsx', '.json'],
     alias: {
       '@pages': path.resolve(__dirname, './src/pages'),
       '@components': path.resolve(__dirname, './src/components'),
@@ -77,8 +61,11 @@ module.exports = {
       '@ui-pages': path.resolve(__dirname, './src/components/ui/pages'),
       '@utils-types': path.resolve(__dirname, './src/utils/types'),
       '@api': path.resolve(__dirname, './src/utils/burger-api.ts'),
+      '@utils': path.resolve(__dirname, './src/utils'),
+      '@services': path.resolve(__dirname, './src/services'),
       '@slices': path.resolve(__dirname, './src/services/slices'),
-      '@selectors': path.resolve(__dirname, './src/services/selectors')
+      '@store': path.resolve(__dirname, './src/services/store.ts'),
+      '@assets': path.resolve(__dirname, './src/assets')
     }
   },
   output: {
@@ -86,10 +73,12 @@ module.exports = {
     filename: 'bundle.js'
   },
   devServer: {
-    static: path.join(__dirname, './dist'),
-    compress: true,
-    historyApiFallback: true,
     port: 4000,
-    open: true
-  }
+    historyApiFallback: true,
+    hot: true,
+    client: {
+      overlay: false, 
+      progress: true,
+    },
+  },
 };
